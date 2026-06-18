@@ -54,6 +54,24 @@ The runner can't call a model itself. The loop is:
 - **Positive and negative cases.** Triggering needs both "should fire" and "must not fire," or you optimize one-sidedly.
 - The prompt must point the agent at the **real artifact** (`~/.claude/skills/tracer/SKILL.md`), so the eval measures the spec, not a paraphrase of it.
 
+## Releasing & self-update
+
+Versioning is [semver](https://semver.org); the canonical version is in [`VERSION`](VERSION). Cutting a release is what makes users update — the skill is installed as a symlink to a git checkout, so "update" == fast-forward `git pull`, and `scripts/version-check.sh` (run from SKILL.md Step 0, throttled 24h, fail-open) does it for a clean consumer checkout while only *notifying* a maintainer's working clone.
+
+To release:
+
+1. Make sure both eval layers are green (`run.py det` + `grade`), or every red is a documented, accepted finding.
+2. Bump [`VERSION`](VERSION) (patch = fixes, minor = new behavior, major = breaking spec changes).
+3. Move `## Unreleased` in [`CHANGELOG.md`](CHANGELOG.md) to `## [x.y.z] - <date>` and start a fresh empty `## Unreleased`.
+4. Commit, then tag and publish:
+   ```bash
+   git tag -a vX.Y.Z -m "tracer vX.Y.Z" && git push origin main --follow-tags
+   gh release create vX.Y.Z --title "tracer vX.Y.Z" --notes "<changelog section>"
+   ```
+5. Consumers' next `/tracer` (after the 24h throttle window) fast-forwards to the new version automatically; the brief report shows `UPDATED: ...`.
+
+Never tag a release whose eval suite is red without a recorded reason — the version is a claim that the harness behaves as documented.
+
 ## Harness design principles tracer already follows
 
 When editing, preserve these — they're why the harness survives `/clear` and resists reward hacking:

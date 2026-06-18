@@ -86,6 +86,14 @@ git repo でない場所では動かさない (state の監査性が成立しな
 `<repo>/.claude/goals/*.md` 全件 + `_pm/decisions-*.md` を読む (旧形式の `_pm/decisions.md` も残っていれば読む)。
 会話履歴の記憶に頼らない。git repo 外 / gh 未認証なら巡回せずユーザーに報告して停止。
 
+**skill 更新チェック (毎回・ただし内部で 24h throttle)**: `~/.claude/skills/tracer/scripts/version-check.sh` を実行する
+(network 不通でも 0 終了するので巡回は止めない)。stdout に 1 行出たら短報の冒頭でそのまま伝える:
+
+- `UPDATED: ...` → clean な checkout だったので自動 fast-forward 済み。**次回 `/tracer` から新版が効く**
+- `UPDATE AVAILABLE: ...` → 作業中 (dirty/ahead) のため自動更新は見送り。提示された `git -C ... pull --ff-only` で更新できる旨を伝える
+
+出力が無ければ最新 (or throttle 中) なので何もしない。skill 自体を巡回中に書き換えないこと (更新は version-check.sh に任せ、適用は次回発火から)。
+
 ### Step 1: action 判定 (improvement 毎、優先順)
 
 各 improvement について、以下を上から順に判定し最初にマッチした action を採用する。

@@ -15,6 +15,8 @@ python3 evals/run.py grade evals/baseline.json   # behavioral: golden cases を�
 
 `SKILL.md` を変えたら必ず両レイヤを再実行し、`det` は緑維持・既存 green を red にしない。ground truth (`evals/cases/*.json` の `expected`) は人間所有で、model 出力に合わせて書き換えない (oracle problem)。`eval:`/`metric:`/`protected_paths` の意味変更は承認必須。変更は `CHANGELOG.md` に記録。
 
+**version 管理 + 自己更新**: canonical version は `VERSION` (semver)。release = `VERSION` bump → `CHANGELOG.md` の `## Unreleased` を `## [x.y.z]` に確定 → `git tag vX.Y.Z` + `gh release`。手順は [`HARNESS.md`](HARNESS.md) の「Releasing & self-update」。install は symlink (git checkout) なので「更新」= `git pull --ff-only`。`scripts/version-check.sh` が SKILL.md Step 0 から走り (24h throttle・fail-open)、**clean な consumer checkout は自動 fast-forward、maintainer の作業中 clone (dirty/ahead) は通知のみ**で絶対に書き換えない。eval が red の状態で tag を切らないこと (version は「documented どおり動く」という主張)。
+
 **配布は symlink**: `~/.claude/skills/tracer` がこの repo を指す。よってここの `SKILL.md` / `templates/` / `scripts/` への編集は、インストール済み skill の挙動に即時反映される (`git pull` = skill 更新)。frontmatter の `name: tracer` と symlink 名・skill 名は一致させること。
 
 ## 唯一の実行可能コード: `scripts/c4-to-section.py`
