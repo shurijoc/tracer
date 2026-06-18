@@ -110,7 +110,7 @@ A だけは repo 全体で 1 回 (init は新規 improvement 追加のため)。
 skill 概要を 10 行程度で説明 (3 モード + 2 層報酬の考え方) し、improvement 名を聞く。
 例を添える: `bugfix` (エラー件数削減) / `perf` (応答速度改善) / `kpi` (プロダクト指標達成)。
 improvement 名は自由だが「metric が数値で取れる仕事」であることが条件、と伝える。
-図解ドキュメント: `~/.claude/skills/tracer/docs/overview.html` を open するコマンドを提示してよい。
+図解ドキュメント: `~/.claude/skills/tracer/index.html` を open するコマンドを提示してよい。
 
 以下が揃うまで init 完了扱いしない:
 
@@ -315,4 +315,4 @@ perf:   [D 通常巡回] metric 310ms/350→200 | #21 PR 待ち (L0: merge 判�
 - テンプレート: この skill ディレクトリの `templates/` (`goal-template.md` / `dashboard-template.html` / `c4-template.json` / `activity.md` / `decisions.md`)
 - C4 スキーマ: `templates/c4-template.json` (context/container/component の node+edge。`node.improvements` で dashboard 強調)
 - C4 レンダラ: `scripts/c4-to-section.py` (c4.json → mermaid → mmdc で SVG 化 → タブ付き自己完結フラグメント。JS ゼロ)
-- 図解: `~/.claude/skills/tracer/docs/overview.html`
+- 図解: `~/.claude/skills/tracer/index.html`

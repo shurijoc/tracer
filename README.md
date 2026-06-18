@@ -7,8 +7,8 @@
 
 設計思想の図解は **self-contained HTML** にまとまっている (依存なし・JS ゼロ)。
 
-- GitHub Pages: <https://shurijoc.github.io/tracer/docs/overview.html> (Pages 有効時)
-- リポジトリ内: [`docs/overview.html`](docs/overview.html) (ローカルで開く)
+- GitHub Pages: <https://shurijoc.github.io/tracer/> (Pages 有効時)
+- リポジトリ内: [`index.html`](index.html) (ローカルで開く)
 
 ## 設計思想
 
@@ -49,7 +49,7 @@ symlink にしておくと `git pull` で skill が自動更新される。
 
 ```
 SKILL.md                       # skill 本体
-docs/overview.html             # 設計解説 (HTML が主役)
+index.html             # 設計解説 (HTML が主役)
 scripts/c4-to-section.py       # c4.json → C4 セクション HTML フラグメント生成
 templates/                     # goal / dashboard / c4 / activity / decisions の雛形
 ```
