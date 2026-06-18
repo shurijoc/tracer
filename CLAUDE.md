@@ -4,7 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## このリポジトリの性質
 
-これはアプリではなく **Claude Code skill `tracer` 本体のリポジトリ**。成果物は「Claude が実行時に読む仕様 (`SKILL.md`) + 補助スクリプト + テンプレート + 設計解説 HTML」。
+これはアプリではなく **Claude Code plugin `tracer` のリポジトリ** (中身は単一 skill)。成果物は「Claude が実行時に読む仕様 (`SKILL.md`) + 補助スクリプト + テンプレート + 設計解説 HTML」。
+
+レイアウト (plugin 標準):
+
+```
+.claude-plugin/plugin.json       # plugin manifest (canonical version はここ)
+.claude-plugin/marketplace.json  # /plugin marketplace add shurijoc/tracer 用
+skills/tracer/SKILL.md           # skill 本体 (実行時に Claude が読む)
+skills/tracer/scripts/           # skill 同梱スクリプト (c4-to-section.py)
+skills/tracer/templates/         # skill 同梱テンプレート
+index.html / index.ja.html       # 設計解説 (repo 直下・GitHub Pages)
+evals/ HARNESS.md CHANGELOG.md   # harness engineering 運用 (repo 直下)
+```
+
+skill 内から同梱ファイルを参照する時は **`${CLAUDE_PLUGIN_ROOT}`** を使う (例: `${CLAUDE_PLUGIN_ROOT}/skills/tracer/scripts/c4-to-section.py`)。実行時の cwd はユーザーの repo なので相対パスは解決しない。
 
 **harness engineering の運用がある**: `SKILL.md` / `templates/` / `scripts/` を変える時は「見た目 OK」でマージしない。eval で gate する。手順・原則は [`HARNESS.md`](HARNESS.md)、eval スイートは `evals/`。最低限:
 
@@ -15,16 +29,14 @@ python3 evals/run.py grade evals/baseline.json   # behavioral: golden cases を�
 
 `SKILL.md` を変えたら必ず両レイヤを再実行し、`det` は緑維持・既存 green を red にしない。ground truth (`evals/cases/*.json` の `expected`) は人間所有で、model 出力に合わせて書き換えない (oracle problem)。`eval:`/`metric:`/`protected_paths` の意味変更は承認必須。変更は `CHANGELOG.md` に記録。
 
-**version 管理 + 自己更新**: canonical version は `VERSION` (semver)。release = `VERSION` bump → `CHANGELOG.md` の `## Unreleased` を `## [x.y.z]` に確定 → `git tag vX.Y.Z` + `gh release`。手順は [`HARNESS.md`](HARNESS.md) の「Releasing & self-update」。install は symlink (git checkout) なので「更新」= `git pull --ff-only`。`scripts/version-check.sh` が SKILL.md Step 0 から走り (24h throttle・fail-open)、**clean な consumer checkout は自動 fast-forward、maintainer の作業中 clone (dirty/ahead) は通知のみ**で絶対に書き換えない。eval が red の状態で tag を切らないこと (version は「documented どおり動く」という主張)。
+**version 管理 + 配布 + 更新 (plugin)**: 配布は **Claude Code plugin marketplace**。ユーザーは `/plugin marketplace add shurijoc/tracer` → `/plugin install tracer@tracer`。canonical version は `.claude-plugin/plugin.json` の `version` (semver)。release = `version` bump → `CHANGELOG.md` の `## Unreleased` を `## [x.y.z]` に確定 → `claude plugin validate . --strict` → `claude plugin tag .` → `gh release`。手順は [`HARNESS.md`](HARNESS.md) の「Releasing & updates」。**更新は plugin システムが担う** (`/plugin update tracer@tracer` or marketplace の autoUpdate) ので自前の updater は持たない (旧 `version-check.sh` は廃止)。eval が red の状態で tag を切らないこと (version は「documented どおり動く」という主張)。開発時は `claude --plugin-dir .` でローカル checkout を読み込む。
 
-**配布は symlink**: `~/.claude/skills/tracer` がこの repo を指す。よってここの `SKILL.md` / `templates/` / `scripts/` への編集は、インストール済み skill の挙動に即時反映される (`git pull` = skill 更新)。frontmatter の `name: tracer` と symlink 名・skill 名は一致させること。
-
-## 唯一の実行可能コード: `scripts/c4-to-section.py`
+## 唯一の実行可能コード: `skills/tracer/scripts/c4-to-section.py`
 
 `c4.json` → Mermaid → `mmdc` で SVG 化 → タブ付き自己完結 HTML フラグメントを stdout に出す。dashboard の `{{C4_SECTION}}` に差し込む用途。
 
 ```bash
-python3 scripts/c4-to-section.py <c4.json path> [<improvement name>]
+python3 skills/tracer/scripts/c4-to-section.py <c4.json path> [<improvement name>]
 ```
 
 検証方法 (`python3 evals/run.py det` がこの不変条件を自動テストする):
@@ -33,7 +45,7 @@ python3 scripts/c4-to-section.py <c4.json path> [<improvement name>]
 
 ## 状態の置き場所 (重要な境界)
 
-skill が運用時に作る state (`<対象repo>/.claude/goals/`) は **この repo ではなく改善対象 repo 側**に置かれる。ここの `.gitignore` は `.claude/goals/` を無視しているので、開発中に手元で生成された state を誤ってコミットしない。state の正本フォーマットは `templates/` の雛形が定義する。
+skill が運用時に作る state (`<対象repo>/.claude/goals/`) は **この repo ではなく改善対象 repo 側**に置かれる。ここの `.gitignore` は `.claude/goals/` を無視しているので、開発中に手元で生成された state を誤ってコミットしない。state の正本フォーマットは `skills/tracer/templates/` の雛形が定義する。
 
 ## アーキテクチャ (SKILL.md が実体)
 
@@ -45,7 +57,7 @@ skill が運用時に作る state (`<対象repo>/.claude/goals/`) は **この r
 - **autonomy L0→L1→L2**: `_pm/decisions-<improvement>.md` の連続 5 回一致 + ユーザー承認で 1 段昇格。autonomy は repo × improvement 単位。合格基準 (eval/metric) は永久にユーザーのもの。
 - **HTML dashboard**: 毎サイクル末に improvement 毎に再生成。人間はこれを見て介入判断する。
 
-`templates/` ↔ `SKILL.md` ↔ `scripts/c4-to-section.py` は密結合: テンプレートのプレースホルダ名 (`{{C4_SECTION}}` 等)、`goal-template.md` の frontmatter キー (`protected_paths` 等)、`c4-template.json` のスキーマ (`levels`/`node.improvements`/`kind`) を変えるときは 3 者を揃えて直す。
+`skills/tracer/templates/` ↔ `skills/tracer/SKILL.md` ↔ `skills/tracer/scripts/c4-to-section.py` は密結合: テンプレートのプレースホルダ名 (`{{C4_SECTION}}` 等)、`goal-template.md` の frontmatter キー (`protected_paths` 等)、`c4-template.json` のスキーマ (`levels`/`node.improvements`/`kind`) を変えるときは 3 者を揃えて直す。
 
 ## ドキュメントの二重化
 

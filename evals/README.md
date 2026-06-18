@@ -36,7 +36,7 @@ Append to the relevant `cases/*.json`:
   "tags": ["positive", "patrol"],
   "expected": "D",
   "rationale": "why this is the correct label (for humans)",
-  "prompt": "instructions that point the agent at ~/.claude/skills/tracer/SKILL.md and ask for ONE label"
+  "prompt": "instructions that point the agent at skills/tracer/SKILL.md and ask for ONE label"
 }
 ```
 

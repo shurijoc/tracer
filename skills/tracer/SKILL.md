@@ -58,7 +58,7 @@ state は **improvement 毎に分離**する。共通ファイルは持たない
 `c4.json` だけは improvement 毎でなく **repo 共通の 1 ファイル** (アーキテクチャは improvement 横断の repo 資産)。
 各 improvement dashboard はこの同じモデルを表示し、その improvement が触る node を強調する (後述 Step 3)。
 
-初回 init 時に存在しなければ、この skill ディレクトリの `templates/` から複製して作る。
+初回 init 時に存在しなければ、`${CLAUDE_PLUGIN_ROOT}/skills/tracer/templates/` から複製して作る。
 git repo でない場所では動かさない (state の監査性が成立しないためユーザーに報告して停止)。
 
 **旧形式互換**: `_pm/decisions.md` / `_pm/activity.md` / `_pm/dashboard.html` (improvement suffix なし) が
@@ -86,14 +86,6 @@ git repo でない場所では動かさない (state の監査性が成立しな
 `<repo>/.claude/goals/*.md` 全件 + `_pm/decisions-*.md` を読む (旧形式の `_pm/decisions.md` も残っていれば読む)。
 会話履歴の記憶に頼らない。git repo 外 / gh 未認証なら巡回せずユーザーに報告して停止。
 
-**skill 更新チェック (毎回・ただし内部で 24h throttle)**: `~/.claude/skills/tracer/scripts/version-check.sh` を実行する
-(network 不通でも 0 終了するので巡回は止めない)。stdout に 1 行出たら短報の冒頭でそのまま伝える:
-
-- `UPDATED: ...` → clean な checkout だったので自動 fast-forward 済み。**次回 `/tracer` から新版が効く**
-- `UPDATE AVAILABLE: ...` → 作業中 (dirty/ahead) のため自動更新は見送り。提示された `git -C ... pull --ff-only` で更新できる旨を伝える
-
-出力が無ければ最新 (or throttle 中) なので何もしない。skill 自体を巡回中に書き換えないこと (更新は version-check.sh に任せ、適用は次回発火から)。
-
 ### Step 1: action 判定 (improvement 毎、優先順)
 
 各 improvement について、以下を上から順に判定し最初にマッチした action を採用する。
@@ -118,7 +110,7 @@ A だけは repo 全体で 1 回 (init は新規 improvement 追加のため)。
 skill 概要を 10 行程度で説明 (3 モード + 2 層報酬の考え方) し、improvement 名を聞く。
 例を添える: `bugfix` (エラー件数削減) / `perf` (応答速度改善) / `kpi` (プロダクト指標達成)。
 improvement 名は自由だが「metric が数値で取れる仕事」であることが条件、と伝える。
-図解ドキュメント: `~/.claude/skills/tracer/index.html` を open するコマンドを提示してよい。
+図解ドキュメント: `${CLAUDE_PLUGIN_ROOT}/index.html` を open するコマンドを提示してよい。
 
 以下が揃うまで init 完了扱いしない:
 
@@ -130,13 +122,13 @@ improvement 名は自由だが「metric が数値で取れる仕事」である�
 4. **metric.target / deadline**: 数値目標と期限。定性的な目標は却下し、数値化を求める
 5. **eval**: Issue 単位の合否コマンド (repo のテスト/lint 実行コマンドを検出して提案)
 
-`templates/goal-template.md` を複製して `<repo>/.claude/goals/<improvement>.md` を作成。
+`${CLAUDE_PLUGIN_ROOT}/skills/tracer/templates/goal-template.md` を複製して `<repo>/.claude/goals/<improvement>.md` を作成。
 方針提示時は懸念 1〜2 個を添える (ユーザーに判断・承認を求めるときは具体的な懸念点を 1〜2 個添える。
 「これで良いか」だけの質問は避ける)。
 
 **C4 モデル生成 (repo 初回のみ)**: `<repo>/.claude/goals/c4.json` が無ければ生成する。
 **Explore subagent (model: haiku で可、規模が大きければ sonnet)** に repo を走査させ、
-`templates/c4-template.json` のスキーマに沿って context(L1)/container(L2)/component(L3) を埋める。
+`${CLAUDE_PLUGIN_ROOT}/skills/tracer/templates/c4-template.json` のスキーマに沿って context(L1)/container(L2)/component(L3) を埋める。
 
 - subagent への指示: コード構造・README・主要 entrypoint・外部依存 (DB/API/SaaS) を読み、
   各 node に `id`(一意・英数) / `name` / `kind`(person|system|external|container|component|db) / `desc` を、
@@ -229,7 +221,7 @@ active improvement 毎に以下を実行 (**複数 improvement は同一メッ�
 ### Step 3: ダッシュボード再生成 (毎サイクル必ず、improvement 毎)
 
 action 実行後、**この巡回で触れた improvement それぞれ**について `<repo>/.claude/goals/_pm/dashboard-<improvement>.html` を再生成する。
-雛形: `~/.claude/skills/tracer/templates/dashboard-template.html` (single-improvement 用 1 枚) を読み込んで中身を差し替える。
+雛形: `${CLAUDE_PLUGIN_ROOT}/skills/tracer/templates/dashboard-template.html` (single-improvement 用 1 枚) を読み込んで中身を差し替える。
 
 旧形式の共通 `_pm/dashboard.html` が残っていれば、初回再生成時に削除する。
 
@@ -249,7 +241,7 @@ action 実行後、**この巡回で触れた improvement それぞれ**につ�
 bundled script 1 本で「c4.json → mermaid → mmdc 検証 → SVG インライン → タブ付きフラグメント」が回る:
 
 ```bash
-python3 ~/.claude/skills/tracer/scripts/c4-to-section.py \
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/tracer/scripts/c4-to-section.py \
   <repo>/.claude/goals/c4.json <improvement>
 ```
 
@@ -320,7 +312,7 @@ perf:   [D 通常巡回] metric 310ms/350→200 | #21 PR 待ち (L0: merge 判�
 
 ## References
 
-- テンプレート: この skill ディレクトリの `templates/` (`goal-template.md` / `dashboard-template.html` / `c4-template.json` / `activity.md` / `decisions.md`)
-- C4 スキーマ: `templates/c4-template.json` (context/container/component の node+edge。`node.improvements` で dashboard 強調)
-- C4 レンダラ: `scripts/c4-to-section.py` (c4.json → mermaid → mmdc で SVG 化 → タブ付き自己完結フラグメント。JS ゼロ)
-- 図解: `~/.claude/skills/tracer/index.html`
+- テンプレート: `${CLAUDE_PLUGIN_ROOT}/skills/tracer/templates/` (`goal-template.md` / `dashboard-template.html` / `c4-template.json` / `activity.md` / `decisions.md`)
+- C4 スキーマ: `${CLAUDE_PLUGIN_ROOT}/skills/tracer/templates/c4-template.json` (context/container/component の node+edge。`node.improvements` で dashboard 強調)
+- C4 レンダラ: `${CLAUDE_PLUGIN_ROOT}/skills/tracer/scripts/c4-to-section.py` (c4.json → mermaid → mmdc で SVG 化 → タブ付き自己完結フラグメント。JS ゼロ)
+- 図解: `${CLAUDE_PLUGIN_ROOT}/index.html`

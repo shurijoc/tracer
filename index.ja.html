@@ -561,7 +561,7 @@
   <h2>10. どの repo でも使える</h2>
   <div class="card">
     <ul style="margin:0;">
-      <li>skill は global（<code>~/.claude/skills/tracer/</code>）、<b>state は各 repo の <code>.claude/goals/</code></b>。repo を跨いで state は混ざらない</li>
+      <li>skill は plugin として配布 (plugin marketplace 経由で install)、<b>state は各 repo の <code>.claude/goals/</code></b>。repo を跨いで state は混ざらない</li>
       <li>init 時に repo の機構を検出して記録: worktree（<code>make wt-start</code> 等があれば利用、なければ <code>git worktree</code>）、実装フロー skill（issue-implement 系があれば踏襲）</li>
       <li>autonomy の実績カウントも repo × improvement 単位</li>
     </ul>

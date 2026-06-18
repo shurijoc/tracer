@@ -17,12 +17,16 @@ md は読むのが疲れる。設計の中身 — 5 状態マシン・2 層報�
 
 ## インストール
 
-```bash
-git clone https://github.com/shurijoc/tracer.git
-ln -s "$(pwd)/tracer" ~/.claude/skills/tracer   # リンク名は tracer 固定 (frontmatter と一致)
+[Claude Code](https://claude.com/claude-code) の plugin。Claude Code 内で:
+
+```
+/plugin marketplace add shurijoc/tracer
+/plugin install tracer@tracer
 ```
 
-[Claude Code](https://claude.com/claude-code) と `gh auth login` が前提。Node.js は任意 (C4 図のみ)。
+更新は `/plugin update tracer@tracer`。`gh auth login` が前提 (Issue 起票に使う)。Node.js は任意 (C4 図のみ)。
+
+開発時はローカル checkout を読み込む: `claude --plugin-dir /path/to/tracer`。
 
 ## クイックスタート
 

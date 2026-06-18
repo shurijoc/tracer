@@ -17,12 +17,16 @@ Markdown is tiring to read. The design — the 5-state machine, the two-layer re
 
 ## Install
 
-```bash
-git clone https://github.com/shurijoc/tracer.git
-ln -s "$(pwd)/tracer" ~/.claude/skills/tracer   # link name must be "tracer" (match the frontmatter)
+It's a [Claude Code](https://claude.com/claude-code) plugin. In Claude Code:
+
+```
+/plugin marketplace add shurijoc/tracer
+/plugin install tracer@tracer
 ```
 
-Requires [Claude Code](https://claude.com/claude-code) and `gh auth login`. Node.js is optional (only for C4 diagrams).
+Update later with `/plugin update tracer@tracer`. Requires `gh auth login` (to file Issues); Node.js is optional (only for C4 diagrams).
+
+For development, load a local checkout instead: `claude --plugin-dir /path/to/tracer`.
 
 ## Quick start
 

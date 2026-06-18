@@ -1,0 +1,10 @@
+{
+  "name": "tracer",
+  "description": "A quantitative-goal-driven autonomous improvement loop, run as a PM. One command (/tracer) reads durable state and runs one of init / roadmap / advisor-escalation / routine-patrol / completion; it regenerates an HTML dashboard every cycle so a human can intervene. Two-layer reward (per-Issue eval + goal metric), reward-hacking guards, and staged autonomy. Works in any repo (state lives in the target repo's .claude/goals/).",
+  "version": "0.2.0",
+  "author": { "name": "shurijoc" },
+  "homepage": "https://github.com/shurijoc/tracer",
+  "repository": "https://github.com/shurijoc/tracer",
+  "license": "MIT",
+  "keywords": ["agent", "harness", "autonomous", "goal", "metric", "pm", "improvement-loop"]
+}

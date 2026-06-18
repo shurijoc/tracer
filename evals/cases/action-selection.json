@@ -5,7 +5,7 @@
     "tags": ["positive", "init"],
     "expected": "A",
     "rationale": "goals/ が空なので init (A) が走る。",
-    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (~/.claude/skills/tracer/SKILL.md, Step 1: action 判定). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `<repo>/.claude/goals/` exists but is empty (0 improvement files, no c4.json).\n- The user just ran `/tracer` for the first time in this repo."
+    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (skills/tracer/SKILL.md, Step 1: action 判定). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `<repo>/.claude/goals/` exists but is empty (0 improvement files, no c4.json).\n- The user just ran `/tracer` for the first time in this repo."
   },
   {
     "id": "as-phases-empty",
@@ -13,7 +13,7 @@
     "tags": ["positive", "roadmap"],
     "expected": "B",
     "rationale": "improvement file はあるが ## Phases が空で Issue 未起票 → roadmap (B)。",
-    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (~/.claude/skills/tracer/SKILL.md, Step 1). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `.claude/goals/perf.md` exists with status: active, a valid metric.measure/baseline/target/eval (init complete).\n- Its `## Phases` section is empty and no GitHub Issues have been filed yet for this improvement."
+    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (skills/tracer/SKILL.md, Step 1). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `.claude/goals/perf.md` exists with status: active, a valid metric.measure/baseline/target/eval (init complete).\n- Its `## Phases` section is empty and no GitHub Issues have been filed yet for this improvement."
   },
   {
     "id": "as-metric-stalled-priority",
@@ -21,7 +21,7 @@
     "tags": ["edge", "priority", "advisor"],
     "expected": "C",
     "rationale": "open Issue は残るが直近5サイクルの metric Log で改善0。優先順で C が D より上。Issue を進める前に計画を見直すのが設計意図。",
-    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (~/.claude/skills/tracer/SKILL.md, Step 1) — note the priority order is top-down (A then B then C then D then E). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `.claude/goals/bugfix.md` is active and fully set up, Phases written, Issues filed.\n- There ARE still open Issues for the current phase.\n- The `## Log` shows the metric for the last 5 cycles: 38, 38, 39, 38, 38 (baseline 42, target <=20) — i.e. essentially flat / 0 improvement across the last 5 cycles."
+    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (skills/tracer/SKILL.md, Step 1) — note the priority order is top-down (A then B then C then D then E). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `.claude/goals/bugfix.md` is active and fully set up, Phases written, Issues filed.\n- There ARE still open Issues for the current phase.\n- The `## Log` shows the metric for the last 5 cycles: 38, 38, 39, 38, 38 (baseline 42, target <=20) — i.e. essentially flat / 0 improvement across the last 5 cycles."
   },
   {
     "id": "as-open-issues-progress",
@@ -29,7 +29,7 @@
     "tags": ["positive", "patrol"],
     "expected": "D",
     "rationale": "stall していない active improvement に open Issue があり、metric も動いている → 通常巡回 (D)。",
-    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (~/.claude/skills/tracer/SKILL.md, Step 1). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `.claude/goals/perf.md` is active, init complete (valid metric/eval).\n- `## Phases` IS fully written, and GitHub Issues ARE already filed for the phases.\n- The current phase still has OPEN (not-yet-closed) Issues.\n- The `## Log` last cycles: 350, 330, 312, 305 ms (baseline 350, target <=200) — the metric is improving, not stalled."
+    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (skills/tracer/SKILL.md, Step 1). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `.claude/goals/perf.md` is active, init complete (valid metric/eval).\n- `## Phases` IS fully written, and GitHub Issues ARE already filed for the phases.\n- The current phase still has OPEN (not-yet-closed) Issues.\n- The `## Log` last cycles: 350, 330, 312, 305 ms (baseline 350, target <=200) — the metric is improving, not stalled."
   },
   {
     "id": "as-target-hit",
@@ -37,7 +37,7 @@
     "tags": ["positive", "done"],
     "expected": "E",
     "rationale": "全 active improvement が target 達成 → 完了報告 (E)。",
-    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (~/.claude/skills/tracer/SKILL.md, Step 1). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- The repo has exactly one active improvement, `.claude/goals/bugfix.md`.\n- All its Issues are closed, all phases checked off.\n- The latest `## Log` metric is 18 with target <=20 — the target is met."
+    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (skills/tracer/SKILL.md, Step 1). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- The repo has exactly one active improvement, `.claude/goals/bugfix.md`.\n- All its Issues are closed, all phases checked off.\n- The latest `## Log` metric is 18 with target <=20 — the target is met."
   },
   {
     "id": "as-new-improvement-added",
@@ -45,6 +45,6 @@
     "tags": ["edge", "init", "parallel"],
     "expected": "A",
     "rationale": "既存 improvement があっても、新規 improvement 追加依頼は init (A) を repo 全体で1回走らせる。前任の完了/pause を待たない (並走原則)。",
-    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (~/.claude/skills/tracer/SKILL.md, Step 1 and the 並走原則 section). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `.claude/goals/bugfix.md` already exists and is active with open Issues.\n- In this `/tracer` invocation the user explicitly asks to ADD a brand-new improvement `perf` that has no goal file yet."
+    "prompt": "You are running the `tracer` skill. Read its action-judgment rule in SKILL.md (skills/tracer/SKILL.md, Step 1 and the 並走原則 section). Apply it to this repo state and output ONLY the single matching action letter (A/B/C/D/E), nothing else.\n\nState:\n- `.claude/goals/bugfix.md` already exists and is active with open Issues.\n- In this `/tracer` invocation the user explicitly asks to ADD a brand-new improvement `perf` that has no goal file yet."
   }
 ]

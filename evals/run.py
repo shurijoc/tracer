@@ -25,7 +25,7 @@ import sys, os, io, json, glob, importlib.util, contextlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CASES_DIR = os.path.join(ROOT, "evals", "cases")
-C4 = os.path.join(ROOT, "scripts", "c4-to-section.py")
+C4 = os.path.join(ROOT, "skills", "tracer", "scripts", "c4-to-section.py")
 
 
 # ---------- load the c4 module (filename has a hyphen) ----------

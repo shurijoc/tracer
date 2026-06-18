@@ -52,23 +52,26 @@ The runner can't call a model itself. The loop is:
 - **Source from real failures**, not imagined ones. 20–50 good cases beat a large synthetic set. ([demystifying evals](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents).)
 - **Unambiguous**: two readers must independently reach the same `expected`. If a case is flaky because the *prompt* is vague (not the model), tighten the prompt — that's eval hygiene, not gaming. (See `as-open-issues-progress`, clarified after the first run still diverged.)
 - **Positive and negative cases.** Triggering needs both "should fire" and "must not fire," or you optimize one-sidedly.
-- The prompt must point the agent at the **real artifact** (`~/.claude/skills/tracer/SKILL.md`), so the eval measures the spec, not a paraphrase of it.
+- The prompt must point the agent at the **real artifact** (`skills/tracer/SKILL.md`), so the eval measures the spec, not a paraphrase of it.
 
-## Releasing & self-update
+## Releasing & updates
 
-Versioning is [semver](https://semver.org); the canonical version is in [`VERSION`](VERSION). Cutting a release is what makes users update — the skill is installed as a symlink to a git checkout, so "update" == fast-forward `git pull`, and `scripts/version-check.sh` (run from SKILL.md Step 0, throttled 24h, fail-open) does it for a clean consumer checkout while only *notifying* a maintainer's working clone.
+tracer ships as a Claude Code **plugin**, so updates ride the plugin system — no bespoke updater. The canonical version is `version` in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json) ([semver](https://semver.org)). Bumping it is what makes installs update — via `/plugin update tracer@tracer`, or automatically if the user enabled `autoUpdate` for the marketplace.
 
 To release:
 
-1. Make sure both eval layers are green (`run.py det` + `grade`), or every red is a documented, accepted finding.
-2. Bump [`VERSION`](VERSION) (patch = fixes, minor = new behavior, major = breaking spec changes).
+1. Both eval layers green (`run.py det` + `grade`), or every red is a documented, accepted finding.
+2. Bump `version` in `.claude-plugin/plugin.json` (patch = fixes, minor = new behavior, major = breaking spec changes). Keep `metadata.version` in `.claude-plugin/marketplace.json` in sync.
 3. Move `## Unreleased` in [`CHANGELOG.md`](CHANGELOG.md) to `## [x.y.z] - <date>` and start a fresh empty `## Unreleased`.
-4. Commit, then tag and publish:
+4. Validate, commit, tag, publish:
    ```bash
-   git tag -a vX.Y.Z -m "tracer vX.Y.Z" && git push origin main --follow-tags
-   gh release create vX.Y.Z --title "tracer vX.Y.Z" --notes "<changelog section>"
+   claude plugin validate . --strict          # schema + manifest agreement
+   git push origin main
+   claude plugin tag .                         # creates the tracer--vX.Y.Z tag (checks plugin.json/marketplace agree)
+   git push origin --tags
+   gh release create tracer-vX.Y.Z --title "tracer vX.Y.Z" --notes "<changelog section>"
    ```
-5. Consumers' next `/tracer` (after the 24h throttle window) fast-forwards to the new version automatically; the brief report shows `UPDATED: ...`.
+5. Users pick up the new version with `/plugin update tracer@tracer` (or automatically with marketplace auto-update).
 
 Never tag a release whose eval suite is red without a recorded reason — the version is a claim that the harness behaves as documented.
 

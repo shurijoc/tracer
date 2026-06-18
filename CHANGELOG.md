@@ -1,10 +1,19 @@
 # Changelog
 
-Versioned per [semver](https://semver.org); the canonical version is in [`VERSION`](VERSION).
-Harness (`SKILL.md` / `templates/` / `scripts/`) changes are eval-gated — see [`HARNESS.md`](HARNESS.md).
+Versioned per [semver](https://semver.org); the canonical version is in [`.claude-plugin/plugin.json`](.claude-plugin/plugin.json).
+Harness (`skills/tracer/SKILL.md` / `templates/` / `scripts/`) changes are eval-gated — see [`HARNESS.md`](HARNESS.md).
 Each entry: what changed, why, and the eval result at the time (`python evals/run.py det` + `grade`).
 
 ## Unreleased
+
+## [0.2.0] - 2026-06-18
+
+### Changed (breaking — distribution)
+- **Ship as a Claude Code plugin** instead of a symlinked skill. Repo restructured to the plugin layout (`.claude-plugin/plugin.json` + `.claude-plugin/marketplace.json`, skill moved to `skills/tracer/`). Install: `/plugin marketplace add shurijoc/tracer` → `/plugin install tracer@tracer`.
+- SKILL.md references bundled files via `${CLAUDE_PLUGIN_ROOT}` (cwd at runtime is the user's repo).
+
+### Removed
+- `VERSION` file and `scripts/version-check.sh` + the SKILL.md Step 0 self-update hook. Updates now ride the plugin system (`/plugin update`, or marketplace auto-update); the canonical version lives in `plugin.json`. The bespoke `git pull` self-updater was non-standard.
 
 ## [0.1.0] - 2026-06-18
 
