@@ -33,6 +33,8 @@ The runner can't call a model itself. The loop is:
 3. Collect answers as `{ "<case-id>": "<label>" }` and `python evals/run.py grade answers.json`.
 4. Save the run to `evals/baseline.json` (it stores model-produced answers + open findings, not ground truth).
 
+**Reference model**: `evals/baseline.json` is graded against **claude-opus-4-8** (the model tracer's main loop runs on). sonnet answers are kept in `sonnet_reference` as a weak-model robustness reference only — they are not the eval gate.
+
 ## The change procedure (every SKILL.md edit)
 
 1. **Reproduce the gap first.** Find a real failure (a wrong action choice, a mis-fire) and write it as a golden case *before* editing `SKILL.md`. Establish the baseline (the current red). ([skill best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices): identify gaps → create evals → baseline → minimal edit → iterate.)
