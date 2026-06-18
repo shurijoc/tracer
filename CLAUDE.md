@@ -43,6 +43,6 @@ skill が運用時に作る state (`<対象repo>/.claude/goals/`) は **この r
 - `README.md` (英語・base) ↔ `README.ja.md` (日本語)
 - `index.html` (英語・base) ↔ `index.ja.html` (日本語) — どちらも依存ゼロ・JS なしの設計解説、GitHub Pages 公開
 
-同じ内容の 4 ファイル + 言語切替リンクなので、設計の芯を変えたら 4 者すべてを同期させる。`SKILL.md` と `templates/` は運用仕様・skill トリガー語の都合で日本語のまま (英語化すると skill 挙動に影響するため触らない)。
+**設計の中身は HTML に一本化している** (「md は読みづらい / HTML が楽」が tracer の主張なので、README をそれに従わせている)。README は薄いランチャー (タイトル + HTML への CTA + install/quickstart のみ) に保ち、設計思想・状態マシン・報酬モデル等を README に書き戻さないこと (書くと主張と矛盾し HTML と重複する)。よって設計の芯を変えたら直すのは原則 `index.html` + `index.ja.html` の 2 つ。README は導線が壊れていないかだけ確認する。`SKILL.md` と `templates/` は運用仕様・skill トリガー語の都合で日本語のまま (英語化すると skill 挙動に影響するため触らない)。
 
 GitHub Pages は `main` ブランチの **root** (`/`) を公開ソースにしている (`gh api repos/<owner>/tracer/pages` の `source.path` が `/`)。`https://shurijoc.github.io/tracer/` → `index.html` (英語)、`.../index.ja.html` → 日本語。
