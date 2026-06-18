@@ -1,0 +1,42 @@
+{
+  "repo": "<reponame>",
+  "updated": "<YYYY-MM-DD 最終更新日。dashboard に鮮度として表示される>",
+  "generated_by": "tracer init (Explore subagent) / 手修正",
+  "note": "repo 共通の C4 モデル。node.improvements に improvement 名を入れると、その improvement の dashboard でハイライトされる。levels は context(L1)/container(L2)/component(L3) の任意サブセット。",
+  "levels": {
+    "context": {
+      "title": "System Context (L1)",
+      "nodes": [
+        { "id": "user", "name": "利用者", "kind": "person", "desc": "システムを使う人" },
+        { "id": "system", "name": "対象システム", "kind": "system", "desc": "この repo が実装する主システム", "improvements": ["<improvement 名>"] },
+        { "id": "ext", "name": "外部サービス", "kind": "external", "desc": "依存する外部 API/SaaS" }
+      ],
+      "edges": [
+        { "from": "user", "to": "system", "label": "操作する" },
+        { "from": "system", "to": "ext", "label": "API 呼び出し" }
+      ]
+    },
+    "container": {
+      "title": "Container (L2)",
+      "nodes": [
+        { "id": "web", "name": "Web App", "kind": "container", "tech": "Next.js", "desc": "UI", "paths": ["app/**"] },
+        { "id": "api", "name": "API", "kind": "container", "tech": "Node", "desc": "業務ロジック", "paths": ["server/**"], "improvements": ["<improvement 名>"] },
+        { "id": "db", "name": "DB", "kind": "db", "tech": "MySQL", "desc": "永続化" }
+      ],
+      "edges": [
+        { "from": "web", "to": "api", "label": "HTTP/JSON" },
+        { "from": "api", "to": "db", "label": "SQL" }
+      ]
+    },
+    "component": {
+      "title": "Component (L3)",
+      "nodes": [
+        { "id": "ctrl", "name": "Controller", "kind": "component", "desc": "入口", "paths": ["server/controllers/**"] },
+        { "id": "svc", "name": "Service", "kind": "component", "desc": "ドメインロジック", "paths": ["server/services/**"], "improvements": ["<improvement 名>"] }
+      ],
+      "edges": [
+        { "from": "ctrl", "to": "svc", "label": "呼び出し" }
+      ]
+    }
+  }
+}

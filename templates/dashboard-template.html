@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tracer dashboard — {{IMPROVEMENT_NAME}} — {{GENERATED_AT}}</title>
+<style>
+  :root {
+    --bg: #fbfbfa; --surface: #ffffff; --surface-2: #f4f4f2;
+    --border: #e4e4e0; --text: #1f2328; --text-mute: #636c76;
+    --accent: #2f6fed; --accent-2: #7c5cff; --accent-bg: #eaf1fe;
+    --ok: #1f883d; --ok-bg: #eaf6ec;
+    --warn: #9a6700; --warn-bg: #fdf3e0;
+    --bad: #cf222e; --bad-bg: #fdeceb;
+    --note: #2f6fed; --note-bg: #eaf1fe;
+    --radius: 10px; --maxw: 1200px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171a; --surface: #1c1f23; --surface-2: #23272c;
+      --border: #30363d; --text: #e6edf3; --text-mute: #99a2ab;
+      --accent: #4f8bff; --accent-2: #a371f7; --accent-bg: #16243f;
+      --ok: #4ac26b; --ok-bg: #122017;
+      --warn: #e3b341; --warn-bg: #241c0c;
+      --bad: #ff7b72; --bad-bg: #2a1413;
+      --note: #4f8bff; --note-bg: #16243f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 0;
+    color: var(--text); background: var(--bg);
+    font-family: var(--sans); line-height: 1.6; font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; }
+  header {
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+  }
+  header h1 { margin: 0; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+  header h1 .improvement { color: var(--accent); font-family: var(--mono); }
+  header .meta { color: var(--text-mute); font-family: var(--mono); font-size: 13px; }
+
+  .action-banner {
+    background: var(--accent-bg); border: 1px solid var(--accent);
+    border-radius: var(--radius); padding: 12px 16px; margin-bottom: 24px;
+  }
+  .action-banner .label { font-size: 12px; color: var(--text-mute); margin-bottom: 4px; }
+  .action-banner .action { font-weight: 600; font-size: 16px; }
+  .action-banner .reason { font-size: 13px; color: var(--text-mute); margin-top: 4px; }
+
+  section { margin-bottom: 28px; }
+  section > h2 {
+    font-size: 15px; margin: 0 0 12px;
+    color: var(--text-mute); text-transform: uppercase; letter-spacing: .04em;
+  }
+
+  .persona {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; font-size: 14px;
+  }
+
+  .metric-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .metric-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .metric-cell { background: var(--surface-2); border-radius: 6px; padding: 10px 12px; }
+  .metric-cell .k { font-size: 11px; color: var(--text-mute); }
+  .metric-cell .v { font-size: 20px; font-weight: 600; font-family: var(--mono); }
+
+  .sparkline { width: 100%; height: 80px; margin: 8px 0 0; }
+  .sparkline path.line { fill: none; stroke: var(--accent); stroke-width: 1.8; }
+  .sparkline line.target { stroke: var(--ok); stroke-width: 1; stroke-dasharray: 3 3; }
+  .sparkline line.baseline { stroke: var(--text-mute); stroke-width: 1; stroke-dasharray: 2 4; }
+  .sparkline circle.point { fill: var(--accent); }
+
+  .phase-block, .autonomy-block, .frozen-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .phase-block .name { font-weight: 600; font-size: 15px; }
+  .phase-block .progress { font-family: var(--mono); color: var(--text-mute); font-size: 13px; margin-top: 4px; }
+  .bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; background: var(--accent); }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; font-family: var(--mono);
+  }
+  .badge.ok { background: var(--ok-bg); color: var(--ok); }
+  .badge.warn { background: var(--warn-bg); color: var(--warn); }
+  .badge.bad { background: var(--bad-bg); color: var(--bad); }
+  .badge.note { background: var(--note-bg); color: var(--note); }
+
+  ul.compact { margin: 6px 0; padding-left: 18px; font-size: 13px; color: var(--text-mute); }
+  ul.compact li { margin: 2px 0; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+  .intervention {
+    background: var(--warn-bg); border: 1px solid var(--warn);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .intervention ul { margin: 6px 0 0; padding-left: 20px; }
+  .intervention li { margin: 4px 0; }
+  .intervention.empty { background: var(--ok-bg); border-color: var(--ok); }
+  .intervention.empty::before { content: "✓ "; color: var(--ok); font-weight: 700; }
+
+  .next {
+    background: var(--surface-2); border-radius: var(--radius);
+    padding: 12px 16px; font-size: 13px;
+  }
+  .next .k { color: var(--text-mute); margin-right: 6px; }
+  .next .v { font-family: var(--mono); font-weight: 600; }
+
+  footer {
+    margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border);
+    color: var(--text-mute); font-size: 12px; font-family: var(--mono);
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: var(--mono); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+
+  /* ---- C4 architecture (Mermaid を mmdc で SVG 化してインライン。JS ゼロ) ---- */
+  .c4-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .c4-host .c4-radio { position: absolute; opacity: 0; pointer-events: none; }
+  .c4-host .c4-stale { float: right; font: 12px var(--mono); color: var(--text-mute); }
+  .c4-host .c4-tabbar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .c4-host .c4-tab {
+    font: 600 12px var(--mono); padding: 4px 12px; border-radius: 999px; cursor: pointer;
+    background: var(--surface-2); color: var(--text-mute); border: 1px solid transparent; user-select: none;
+  }
+  .c4-host .c4-pane { display: none; }
+  /* radio:checked → 同順の pane を表示。最大 3 level */
+  .c4-host .c4-radio:nth-of-type(1):checked ~ .c4-tabbar .c4-tab:nth-of-type(1),
+  .c4-host .c4-radio:nth-of-type(2):checked ~ .c4-tabbar .c4-tab:nth-of-type(2),
+  .c4-host .c4-radio:nth-of-type(3):checked ~ .c4-tabbar .c4-tab:nth-of-type(3) {
+    background: var(--accent-bg); color: var(--accent); border-color: var(--accent);
+  }
+  .c4-host .c4-radio:nth-of-type(1):checked ~ .c4-panes .c4-pane:nth-of-type(1),
+  .c4-host .c4-radio:nth-of-type(2):checked ~ .c4-panes .c4-pane:nth-of-type(2),
+  .c4-host .c4-radio:nth-of-type(3):checked ~ .c4-panes .c4-pane:nth-of-type(3) {
+    display: block;
+  }
+  /* Mermaid SVG は light テーマ色なので常に明色カードに載せる (dark でも可読) */
+  .c4-host .c4-pane {
+    background: #ffffff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; overflow-x: auto;
+  }
+  .c4-host .c4-pane svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+  .c4-host .c4-legend { font-size: 11px; color: var(--text-mute); margin-top: 8px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .c4-host .c4-legend span::before { content: "■ "; }
+  .c4-host .c4-empty { color: var(--text-mute); font-size: 13px; padding: 8px 0; }
+  .c4-host .c4-empty pre { white-space: pre-wrap; font-size: 11px; color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>tracer dashboard <span class="improvement">{{IMPROVEMENT_NAME}}</span> <span class="badge {{STATUS_CLASS}}">{{STATUS_LABEL}}</span></h1>
+  <span class="meta">{{REPO_PATH}} · {{GENERATED_AT}}</span>
+</header>
+
+<!-- 今サイクルの現在地 -->
+<div class="action-banner">
+  <div class="label">今サイクルの action</div>
+  <div class="action">{{ACTION_LETTER}} — {{ACTION_NAME}}</div>
+  <div class="reason">{{ACTION_REASON}}</div>
+</div>
+
+<!-- persona -->
+<section>
+  <h2>persona</h2>
+  <div class="persona">{{PERSONA_SHORT}}</div>
+</section>
+
+<!-- C4 アーキテクチャ (repo 共通モデル / この improvement が触る node を青枠で強調)。
+     {{C4_SECTION}} には scripts/c4-to-section.py の出力 (mmdc で SVG 化した自己完結フラグメント) を差し込む -->
+<section id="c4-section">
+  <h2>C4 アーキテクチャ</h2>
+  <div class="c4-block">
+    {{C4_SECTION}}
+  </div>
+</section>
+
+<!-- metric 推移 -->
+<section>
+  <h2>metric 推移</h2>
+  <div class="metric-block">
+    <div class="metric-row">
+      <div class="metric-cell"><div class="k">baseline</div><div class="v">{{BASELINE}}</div></div>
+      <div class="metric-cell"><div class="k">現在</div><div class="v">{{CURRENT}}</div></div>
+      <div class="metric-cell"><div class="k">target</div><div class="v">{{TARGET}}</div></div>
+    </div>
+    <svg class="sparkline" viewBox="0 0 400 80" preserveAspectRatio="none">
+      <line class="baseline" x1="0" y1="{{BASELINE_Y}}" x2="400" y2="{{BASELINE_Y}}"/>
+      <line class="target" x1="0" y1="{{TARGET_Y}}" x2="400" y2="{{TARGET_Y}}"/>
+      <path class="line" d="{{SPARKLINE_PATH}}"/>
+      {{SPARKLINE_POINTS}}
+    </svg>
+  </div>
+</section>
+
+<!-- フェーズ / autonomy / 凍結 -->
+<section>
+  <h2>進捗</h2>
+  <div class="two-col">
+    <div class="phase-block">
+      <div class="name">現フェーズ: {{CURRENT_PHASE}}</div>
+      <div class="progress">{{DONE}}/{{TOTAL}} 件消化 ({{PROGRESS_PCT}}%)</div>
+      <div class="bar"><div style="width: {{PROGRESS_PCT}}%"></div></div>
+    </div>
+    <div class="autonomy-block">
+      <div class="name">autonomy: <span class="badge note">{{AUTONOMY}}</span></div>
+      <ul class="compact">
+        <li>判断一致 streak: {{STREAK}}/5</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>凍結中 Issue</h2>
+  <div class="frozen-block">
+    {{FROZEN_ISSUES}}
+  </div>
+</section>
+
+<!-- 介入候補 -->
+<section>
+  <h2>介入候補 (ユーザー判断待ち)</h2>
+  <div class="intervention {{INTERVENTION_CLASS}}">
+    {{INTERVENTION_LIST}}
+  </div>
+</section>
+
+<!-- 次回予想 -->
+<section>
+  <h2>次回 <code>/tracer</code> の予想 action ({{IMPROVEMENT_NAME}})</h2>
+  <div class="next">
+    <span class="k">予想:</span><span class="v">{{NEXT_ACTION}}</span>
+    <span class="k" style="margin-left: 16px;">理由:</span>{{NEXT_REASON}}
+  </div>
+</section>
+
+<footer>
+  Generated by tracer skill · activity log: <code>_pm/activity-{{IMPROVEMENT_NAME}}.md</code> · decisions: <code>_pm/decisions-{{IMPROVEMENT_NAME}}.md</code> · goal file: <code>{{IMPROVEMENT_NAME}}.md</code>
+</footer>
+
+</div>
+
+</body>
+</html>
