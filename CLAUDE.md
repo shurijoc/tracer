@@ -18,7 +18,7 @@ index.html / index.ja.html       # 設計解説 (repo 直下・GitHub Pages)
 evals/ HARNESS.md CHANGELOG.md   # harness engineering 運用 (repo 直下)
 ```
 
-skill 内から同梱ファイルを参照する時は **`${CLAUDE_PLUGIN_ROOT}`** を使う (例: `${CLAUDE_PLUGIN_ROOT}/skills/tracer/scripts/c4-to-section.py`)。実行時の cwd はユーザーの repo なので相対パスは解決しない。
+skill 内から同梱ファイル (scripts/templates) を参照する時は、SKILL.md 冒頭の find recipe で `$TRACER_DIR` を解決して `$TRACER_DIR/scripts/...` を使う。**`${CLAUDE_PLUGIN_ROOT}` は skill の ad-hoc bash では空** (実測: install 済みでも `[]`。docs の「skill content で展開」は hook/MCP 等限定で、モデルが打つ bash には効かない) なので使わない。実行時 cwd はユーザーの repo なので相対パスも不可。設計解説は同梱 HTML でなく GitHub Pages URL を案内する。
 
 **harness engineering の運用がある**: `SKILL.md` / `templates/` / `scripts/` を変える時は「見た目 OK」でマージしない。eval で gate する。手順・原則は [`HARNESS.md`](HARNESS.md)、eval スイートは `evals/`。最低限:
 

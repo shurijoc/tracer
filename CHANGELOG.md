@@ -6,6 +6,11 @@ Each entry: what changed, why, and the eval result at the time (`python evals/ru
 
 ## Unreleased
 
+## [0.2.1] - 2026-06-18
+
+### Fixed
+- **Bundled-file path resolution.** 0.2.0 referenced bundled scripts/templates via `${CLAUDE_PLUGIN_ROOT}`, but a live install smoke test showed that variable is **empty** in the ad-hoc bash the skill runs (it only expands in hooks/MCP/LSP/monitors, not skill-issued bash). SKILL.md now resolves `$TRACER_DIR` once via `find ~/.claude/plugins/cache ~/.claude/skills -path '*/skills/tracer/SKILL.md' | sort -V | tail -1`, working for both plugin install and dev symlink. Design-doc links now point to the GitHub Pages URL instead of a local path. Verified by installing the plugin and running the c4 render end-to-end (exit 0, valid fragment).
+
 ## [0.2.0] - 2026-06-18
 
 ### Changed (breaking — distribution)
