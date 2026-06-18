@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tracer — 定量ゴール駆動の自律改善ループ (PM ハブ)</title>
+<title>tracer — a quantitative-goal-driven autonomous improvement loop (PM hub)</title>
 <style>
   :root {
     --bg: #0f1419;
@@ -12,10 +12,10 @@
     --line: #2e3a47;
     --text: #e6edf3;
     --muted: #94a3b3;
-    --pm: #ab87f5;      /* PM = 紫 */
-    --worker: #4fc3f7;  /* worker subagent = 青 */
-    --metric: #ffb74d;  /* metric/報酬 = 橙 */
-    --human: #f06292;   /* user = 桃 */
+    --pm: #ab87f5;      /* PM = purple */
+    --worker: #4fc3f7;  /* worker subagent = blue */
+    --metric: #ffb74d;  /* metric/reward = orange */
+    --human: #f06292;   /* user = pink */
     --ok: #66bb6a;
     --ng: #ef5350;
     --warn: #ffca28;
@@ -29,6 +29,10 @@
     padding: 40px 20px 80px;
   }
   .wrap { max-width: 960px; margin: 0 auto; }
+  .langswitch { text-align: right; font-size: .85rem; margin-bottom: 14px; }
+  .langswitch a { color: var(--muted); text-decoration: none; }
+  .langswitch a:hover { color: var(--text); }
+  .langswitch a.active { color: var(--pm); font-weight: 700; }
   h1 {
     font-size: 1.7rem;
     margin-bottom: 8px;
@@ -67,7 +71,7 @@
   th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
   th { color: var(--muted); font-weight: 600; font-size: .8rem; }
 
-  /* ===== 全体図 ===== */
+  /* ===== overview diagram ===== */
   .arch { text-align: center; margin: 24px 0; }
   .actor {
     display: inline-block;
@@ -130,7 +134,7 @@
   }
   .keypoint::before { content: "★ "; color: var(--human); }
 
-  /* ===== 状態機械 (5 actions) ===== */
+  /* ===== state machine (5 actions) ===== */
   .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 18px 0; }
   .state {
     background: var(--panel);
@@ -159,7 +163,7 @@
   .state.s-done { border-left-color: var(--ok); }
   .state.s-done .letter { color: var(--ok); }
 
-  /* ===== 2層報酬 ===== */
+  /* ===== two-layer reward ===== */
   .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
   @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
   .compare .card { margin: 0; }
@@ -174,7 +178,7 @@
   .tag.t-macro { background: rgba(255,183,77,.15); color: var(--metric); }
   .tag.t-verify { background: rgba(239,83,80,.15); color: var(--ng); }
 
-  /* ===== サイクルフロー ===== */
+  /* ===== cycle flow ===== */
   .steps { counter-reset: step; margin: 18px 0; }
   .step {
     display: flex; gap: 14px; align-items: flex-start;
@@ -278,298 +282,300 @@
 <body>
 <div class="wrap">
 
-  <h1>tracer — 定量ゴール駆動の自律改善ループ</h1>
-  <p class="lede">「loop（再発火の器）＋外部 eval（合否）＋durable state（git/Issue）＋ゲート」の分離設計を、そのまま 1 つの skill に実装したもの。あなたが打つコマンドは <code>/tracer</code> ただ 1 本。skill が state を読んで、init / roadmap / 顧問 / 巡回 / 完了 のどれを実行すべきかを毎回判定する。</p>
+  <div class="langswitch"><a class="active">English</a> | <a href="index.ja.html">日本語</a></div>
 
-  <h2>1. 全体像 — あなたが打つのは <code>/tracer</code> だけ</h2>
+  <h1>tracer — a quantitative-goal-driven autonomous improvement loop</h1>
+  <p class="lede">A separation-of-concerns design — loop (the re-entry vehicle) + external eval (pass/fail) + durable state (git/Issues) + gates — implemented directly as a single skill. The only command you type is <code>/tracer</code>. The skill reads the state and decides, every time, which of init / roadmap / advisor / patrol / completion to run.</p>
+
+  <h2>1. The big picture — all you type is <code>/tracer</code></h2>
 
   <div class="arch">
-    <div class="actor human">ユーザー</div>
-    <div class="varrow">⇅ <small>対話の入口はこのコマンド 1 本（init 対話・escalation 回答・merge 判断もここに集まる）</small></div>
+    <div class="actor human">User</div>
+    <div class="varrow">⇅ <small>This one command is the only entry point (init dialogue, escalation answers, and merge decisions all converge here)</small></div>
     <div class="actor cmd-only">/tracer</div>
-    <div class="varrow">↓ <small>skill が state を読み 5 状態 (A〜E) から 1 つ選んで実行</small></div>
+    <div class="varrow">↓ <small>The skill reads the state and picks exactly one of five states (A–E) to run</small></div>
     <div class="actor pm">PM (tracer)</div>
-    <div class="varrow">↓ <small>通常巡回 (D) では improvement 毎の作業 1 件ずつを並列 dispatch（worktree 隔離）</small></div>
+    <div class="varrow">↓ <small>In routine patrol (D) it dispatches one task per improvement in parallel (worktree-isolated)</small></div>
     <div class="workers">
-      <div class="wbox">bugfix worker<small>persona+eval を注入</small></div>
-      <div class="wbox">perf worker<small>persona+eval を注入</small></div>
-      <div class="wbox">kpi worker<small>persona+eval を注入</small></div>
+      <div class="wbox">bugfix worker<small>persona+eval injected</small></div>
+      <div class="wbox">perf worker<small>persona+eval injected</small></div>
+      <div class="wbox">kpi worker<small>persona+eval injected</small></div>
     </div>
     <div class="statebar">
-      <b>durable state（PM の記憶はここ。session の context に依存しない）</b>
-      <span>各 repo の .claude/goals/&lt;improvement&gt;.md ／ GitHub Issue・PR ／ git 履歴 ／ _pm/decisions-&lt;improvement&gt;.md・activity-&lt;improvement&gt;.md</span>
+      <b>durable state (the PM's memory lives here; it does not depend on session context)</b>
+      <span>each repo's .claude/goals/&lt;improvement&gt;.md / GitHub Issues &amp; PRs / git history / _pm/decisions-&lt;improvement&gt;.md &amp; activity-&lt;improvement&gt;.md</span>
     </div>
     <div class="dashbar">
-      <b>毎サイクル末に dashboard を再生成（介入判断の窓）</b>
-      <span>.claude/goals/_pm/dashboard-&lt;improvement&gt;.html ／ あなたはこれを見て介入・テコ入れする</span>
+      <b>The dashboard is regenerated at the end of every cycle (your window for intervention)</b>
+      <span>.claude/goals/_pm/dashboard-&lt;improvement&gt;.html / you look at this and decide whether to step in</span>
     </div>
   </div>
 
-  <div class="keypoint">improvement の worker は常駐セッションではない。PM が発火のたびに使い捨ての subagent として起動し、結果は Issue/PR/goal file に書き残させる。だから <code>/clear</code> しても次の発火で全部復元できる。</div>
+  <div class="keypoint">An improvement's worker is not a long-lived session. The PM launches it as a throwaway subagent on each firing, and makes it write its results into Issues/PRs/the goal file. That's why everything can be restored on the next firing even after a <code>/clear</code>.</div>
 
-  <h2>2. 1 コマンドで何が起きるか — 5 状態の自動判定</h2>
+  <h2>2. What happens with one command — automatic 5-state selection</h2>
 
-  <p><code>/tracer</code> を打つと、skill は state を読み <b>最初にマッチした action を 1 つだけ実行</b>する。判定は上から順 (A → E)。同サイクルに複数 action は走らせない (あなたの確認単位を 1 つに保つため)。</p>
+  <p>When you type <code>/tracer</code>, the skill reads the state and <b>runs only the first action that matches</b>. Matching is top-down (A → E). It never runs multiple actions in the same cycle (to keep your unit of review to one).</p>
 
   <div class="states">
     <div class="state s-init">
       <span class="letter">A</span>
       <b>init</b>
-      <div class="cond">goals/ が空 or improvement file 0 件</div>
-      <div class="act">改善対象を 1 つ対話で確定。persona / metric / eval / baseline / target / 期限を埋める。計測コマンドが実際に動くまで閉じない</div>
+      <div class="cond">goals/ is empty, or there are 0 improvement files</div>
+      <div class="act">Settle on one improvement target through dialogue. Fill in persona / metric / eval / baseline / target / deadline. Don't close until the measurement command actually runs</div>
     </div>
     <div class="state s-roadmap">
       <span class="letter">B</span>
       <b>roadmap</b>
-      <div class="cond">improvement あるが Phases 空 / Issue 未起票</div>
-      <div class="act">全フェーズを書き切り、各フェーズで Issue 起票 (<code>label:goal:&lt;improvement&gt;</code>)</div>
+      <div class="cond">improvement exists but Phases is empty / Issues not filed</div>
+      <div class="act">Write out every phase and file Issues for each (<code>label:goal:&lt;improvement&gt;</code>)</div>
     </div>
     <div class="state s-advisor">
       <span class="letter">C</span>
-      <b>顧問 escalation</b>
-      <div class="cond">直近 5 サイクル分の metric Log で改善 0 の improvement あり</div>
-      <div class="act">opus + effort max で原因分析。Issue 起票案を出す（読み専、実装はしない）</div>
+      <b>advisor escalation</b>
+      <div class="cond">an improvement shows 0 metric improvement across the last 5 cycles of Log</div>
+      <div class="act">Root-cause analysis with opus + effort max. Produces a proposed Issue (read-only, does not implement)</div>
     </div>
     <div class="state s-cycle">
       <span class="letter">D</span>
-      <b>通常巡回</b>
-      <div class="cond">active improvement で open Issue がある</div>
-      <div class="act">improvement 毎に metric 計測 → Issue 1 件 dispatch → 独立検証 → フェーズ判定</div>
+      <b>routine patrol</b>
+      <div class="cond">an active improvement has open Issues</div>
+      <div class="act">Per improvement: measure the metric → dispatch one Issue → independent verification → phase decision</div>
     </div>
     <div class="state s-done">
       <span class="letter">E</span>
-      <b>完了報告</b>
-      <div class="cond">全 active improvement が target 達成</div>
-      <div class="act">improvement を inactive 化、ループから外す。次に何を始めるか提案</div>
+      <b>completion report</b>
+      <div class="cond">all active improvements have hit their target</div>
+      <div class="act">Mark the improvement inactive and drop it from the loop. Suggest what to start next</div>
     </div>
   </div>
 
-  <div class="keypoint">優先順は厳密に上から。たとえば「open Issue は残ってるが metric が 5 サイクル動かない」なら、D ではなく C が走る。Issue を作業する前に計画自体を見直す、が設計意図。</div>
+  <div class="keypoint">Priority is strictly top-down. For example, if "open Issues remain but the metric hasn't moved for 5 cycles," C runs instead of D. The design intent: revisit the plan itself before working on Issues.</div>
 
-  <h2>3. 報酬は 2 層 — 定性ゴールは受け付けない (RLVR 的)</h2>
+  <h2>3. Reward is two-layered — qualitative goals are rejected (RLVR-style)</h2>
 
   <div class="compare">
     <div class="card micro">
-      <span class="tag t-micro">micro 報酬 — eval</span>
-      <h3>Issue 1 件の合否ゲート</h3>
+      <span class="tag t-micro">micro reward — eval</span>
+      <h3>Pass/fail gate for one Issue</h3>
       <ul>
-        <li>決定論的コマンド（例: <code>npm test && npm run lint</code>）</li>
-        <li>exit 0 = 合格。worker の自己申告は採用しない</li>
-        <li><b>合格しないと PR/merge に進めない</b>（回帰防止ゲート）</li>
+        <li>A deterministic command (e.g. <code>npm test && npm run lint</code>)</li>
+        <li>exit 0 = pass. The worker's self-report is not accepted</li>
+        <li><b>No PR/merge without a pass</b> (a regression-prevention gate)</li>
       </ul>
     </div>
     <div class="card macro">
-      <span class="tag t-macro">macro 報酬 — metric</span>
-      <h3>ゴール指標そのもの</h3>
+      <span class="tag t-macro">macro reward — metric</span>
+      <h3>The goal metric itself</h3>
       <ul>
-        <li>例: エラー 42 件/週 → <b>20 件以下</b>（期限つき）</li>
-        <li>巡回毎に計測して goal file に時系列記録</li>
-        <li><b>フェーズ完了の判定基準は Issue 消化数ではなく metric の動き</b></li>
+        <li>e.g. 42 errors/week → <b>20 or fewer</b> (with a deadline)</li>
+        <li>Measured every patrol and recorded as a time series in the goal file</li>
+        <li><b>Phase completion is judged by metric movement, not by the number of Issues closed</b></li>
       </ul>
     </div>
   </div>
 
-  <div class="keypoint">Issue を全部閉じたのに metric が動かない＝「作業の失敗」ではなく<b>「計画の誤り」シグナル</b>。次の発火で状態判定が D ではなく C に流れ、顧問が Issue を組み直す。ここが自己改善の核。</div>
+  <div class="keypoint">Closing all the Issues but the metric not moving is not "a failure of the work" — it's a <b>"the plan is wrong" signal</b>. On the next firing the state check flows to C instead of D, and the advisor restructures the Issues. This is the core of self-improvement.</div>
 
-  <h2>4. 通常巡回 (D) の中身</h2>
-  <p>active improvement 毎に以下を踏む。state 復元 → 計測 → dispatch → 独立検証 → フェーズ判定 → ダッシュボード更新 + 短報。会話の記憶ではなく goal file から毎回ゼロから組み立てる。</p>
+  <h2>4. Inside routine patrol (D)</h2>
+  <p>For each active improvement, it goes through: restore state → measure → dispatch → independent verification → phase decision → dashboard update + brief report. It rebuilds from the goal file from scratch every time, not from conversation memory.</p>
 
   <div class="steps">
     <div class="step"><span class="no"></span><div class="body">
-      <b>state 復元</b><span>goal file・判断ログを毎回ゼロから読み直す。会話の記憶に頼らない（context 枯渇対策）。</span>
+      <b>Restore state</b><span>Re-read the goal file and decision log from scratch every time. Don't rely on conversation memory (a guard against context exhaustion).</span>
     </div></div>
     <div class="step"><span class="no"></span><div class="body">
-      <b>metric 計測</b><span class="c-metric">巡回のたびに数値を取り、goal file の Log に追記。計測が壊れていたら作業せず escalation。</span>
+      <b>Measure the metric</b><span class="c-metric">Take the number every patrol and append it to the goal file's Log. If measurement is broken, escalate instead of working.</span>
     </div></div>
     <div class="step"><span class="no"></span><div class="body">
-      <b>dispatch（improvement 毎に Issue 1 件）</b><span>worker に persona・eval・<b>過去の失敗ログ</b>を渡して worktree で自走させる。複数 improvement は並列。</span>
+      <b>Dispatch (one Issue per improvement)</b><span>Hand the worker the persona, eval, and <b>past failure logs</b>, and let it run autonomously in a worktree. Multiple improvements run in parallel.</span>
     </div></div>
     <div class="step"><span class="no"></span><div class="body">
-      <b>独立検証</b><span>tamper check + verifier 分離の 2 段で合否を確定（§5）。</span>
+      <b>Independent verification</b><span>Confirm pass/fail in two stages — tamper check + a separate verifier (§5).</span>
       <div class="branch">
-        <span class="br ok">独立検証 pass + eval 合格 → PR（L0: merge はあなたが判断 / L1+: PM が merge）</span>
-        <span class="br ng">不合格 → 試行 n/5 を Issue コメントに記録、次の発火で再挑戦</span>
-        <span class="br warn">5 回失敗 → escalation + その Issue は凍結</span>
+        <span class="br ok">verification passes + eval passes → PR (L0: you decide the merge / L1+: the PM merges)</span>
+        <span class="br ng">fail → record attempt n/5 in an Issue comment, retry on the next firing</span>
+        <span class="br warn">5 failures → escalation + that Issue is frozen</span>
       </div>
     </div></div>
     <div class="step"><span class="no"></span><div class="body">
-      <b>フェーズ判定</b><span>Issue 全消化 + metric 改善 → 次フェーズへ。metric 停滞 → 次の発火で C にリダイレクト。target 達成 → 次の発火で E へ。</span>
+      <b>Phase decision</b><span>All Issues closed + metric improved → advance to the next phase. Metric stalled → redirect to C on the next firing. Target reached → go to E on the next firing.</span>
     </div></div>
     <div class="step"><span class="no"></span><div class="body">
-      <b>dashboard 更新 + 短報</b><span>dashboard.html を再生成（§8）し、あなたに数行のサマリ。詳細は PR・Issue・dashboard に置き、チャットは薄く保つ。</span>
+      <b>Dashboard update + brief report</b><span>Regenerate dashboard.html (§8) and give you a few-line summary. Keep details in the PR/Issue/dashboard and keep chat thin.</span>
     </div></div>
   </div>
 
-  <h2>5. 独立検証 — worker の自己申告で前進しない</h2>
+  <h2>5. Independent verification — never advance on the worker's self-report</h2>
 
-  <p>合格処理の前に検証を 2 段で挟む。worker が「eval 通った」と言うだけでは PR は進まず、報酬関数 (eval / metric 計算 / truth) への間接改変も機械的に止める。<b>verifier</b> = 実装 worker とは別の subagent で、合否を独立に再確認する役。</p>
+  <p>Two verification stages sit before the pass-handling. A worker merely claiming "eval passed" does not move the PR forward, and indirect tampering with the reward function (eval / metric calculation / truth) is stopped mechanically. The <b>verifier</b> is a subagent separate from the implementing worker, whose job is to independently re-confirm pass/fail.</p>
 
   <div class="compare">
     <div class="card verify">
       <span class="tag t-verify">tamper check</span>
-      <h3>diff を <code>protected_paths</code> と突合</h3>
+      <h3>Cross-check the diff against <code>protected_paths</code></h3>
       <ul>
-        <li><code>git diff --name-only origin/main...&lt;branch&gt;</code> を取る</li>
-        <li>goal file の <code>repo.protected_paths</code> と突合</li>
-        <li>1 ファイルでも hit したら eval 結果を無視して escalation</li>
+        <li>Take <code>git diff --name-only origin/main...&lt;branch&gt;</code></li>
+        <li>Cross-check against the goal file's <code>repo.protected_paths</code></li>
+        <li>If even one file hits, ignore the eval result and escalate</li>
       </ul>
     </div>
     <div class="card verify">
-      <span class="tag t-verify">verifier 分離</span>
-      <h3>別 subagent が PR branch 上で eval 再実行</h3>
+      <span class="tag t-verify">separate verifier</span>
+      <h3>A different subagent re-runs eval on the PR branch</h3>
       <ul>
-        <li>実装 worker と<b>別</b>の subagent を起動</li>
-        <li>PR branch を check-out させて eval を再走</li>
-        <li>合否を独立に確認 (自己申告に依存しない)</li>
+        <li>Launch a subagent <b>different</b> from the implementing worker</li>
+        <li>Have it check out the PR branch and re-run eval</li>
+        <li>Confirm pass/fail independently (not dependent on the self-report)</li>
       </ul>
     </div>
   </div>
 
-  <div class="keypoint">reward を稼ぐ側が reward を計算する側を書き換える経路を、プロンプトの禁止文ではなく機械チェックで遮断する。</div>
+  <div class="keypoint">The path by which the side earning the reward rewrites the side computing the reward is blocked with a mechanical check — not a "do not" sentence in the prompt.</div>
 
   <div class="card">
-    <h3>protected_paths の対象と worker 禁則</h3>
+    <h3>What protected_paths covers, and the worker prohibitions</h3>
     <ul style="margin-bottom: 0;">
-      <li><b>protected_paths</b>: <code>eval</code> 実行コード / metric 計算スクリプト / truth データ / gate 周りの validation。goal file の <code>repo.protected_paths</code> に列挙</li>
-      <li><b>baseline 差替 flag の禁止</b>: <code>--accept-new-baseline</code> 等、合格基準を書き換える flag は worker に使わせない</li>
-      <li>必要があれば worker は実装せず Issue コメントに必要性を書いて終了 (ユーザー承認経由でのみ変更可)</li>
+      <li><b>protected_paths</b>: the <code>eval</code> execution code / metric calculation scripts / truth data / validation around the gate. Listed in the goal file's <code>repo.protected_paths</code></li>
+      <li><b>Banning baseline-swap flags</b>: don't let the worker use flags that rewrite the acceptance criteria, e.g. <code>--accept-new-baseline</code></li>
+      <li>If genuinely needed, the worker doesn't implement — it writes the necessity in an Issue comment and stops (changes only via user approval)</li>
     </ul>
   </div>
 
-  <h2>6. 判断の段階委譲 — PM は実績で権限を獲得する</h2>
-  <p>PM の権限は固定ではなく、判断一致の実績で段階的に広げる。最初は全件相談 (L0)、5 回連続で推奨案と実決定が一致したら 1 段昇格する。</p>
+  <h2>6. Staged delegation of judgment — the PM earns authority through a track record</h2>
+  <p>The PM's authority is not fixed; it widens in stages based on a track record of agreement. It starts by consulting on everything (L0), and after the recommendation matches the actual decision 5 times in a row it is promoted one step.</p>
 
   <div class="ladder">
     <div class="rung l0">
-      <b>L0 — 全件相談（初期値）</b>
-      <span>escalation・merge はあなたが決める。ただし PM は毎回「推奨案 + 懸念」を添える義務がある。</span>
+      <b>L0 — consult on everything (initial)</b>
+      <span>You decide escalations and merges. But the PM is obliged to attach a "recommendation + concerns" every time.</span>
     </div>
     <span class="ladder-arrow">→</span>
     <div class="rung l1">
-      <b>L1 — 即決 + 事後報告</b>
-      <span>PM が決めて実行し、次の短報で報告。あなたには拒否権が残る。</span>
+      <b>L1 — decide + report after</b>
+      <span>The PM decides and acts, then reports in the next brief. You retain a veto.</span>
     </div>
     <span class="ladder-arrow">→</span>
     <div class="rung l2">
-      <b>L2 — 記録のみ</b>
-      <span>判断ログに残し、週次サマリに集約。</span>
+      <b>L2 — record only</b>
+      <span>Logged in the decision log and rolled up into a weekly summary.</span>
     </div>
   </div>
 
   <ul>
-    <li>昇格条件: <b>PM の推奨案があなたの実決定と連続 5 回一致</b> → PM が昇格を提案、あなたが承認</li>
-    <li>不一致が 1 回出たら連続カウントは 0 に戻る</li>
-    <li>突合の証跡は <code>_pm/decisions.md</code>。「委譲してよいか」を感覚でなく数字で判断できる</li>
-    <li>autonomy は repo × improvement 単位</li>
+    <li>Promotion condition: <b>the PM's recommendation matches your actual decision 5 times in a row</b> → the PM proposes promotion, you approve</li>
+    <li>One mismatch resets the streak count to 0</li>
+    <li>The audit trail is <code>_pm/decisions.md</code>. You can judge "is it OK to delegate" by numbers, not gut feel</li>
+    <li>Autonomy is per repo × improvement</li>
   </ul>
 
   <div class="card guard">
-    <h3>例外: 報酬関数だけは絶対に委譲しない</h3>
-    <p style="margin:0; font-size:.9rem;"><code>eval:</code> / <code>metric:</code> の定義変更は autonomy が L2 でも<b>あなたの承認必須</b>。PM が自分で合格基準を緩められると、ループ全体が reward hacking で無意味化するため。</p>
-    <p style="margin:8px 0 0; font-size:.82rem; color: var(--muted);">さらに <code>repo.protected_paths</code> (eval/metric/truth 計算 path) への diff は §5 の独立検証で機械的に検出し、worker からの間接改変も遮断する。</p>
+    <h3>Exception: the reward function is never delegated</h3>
+    <p style="margin:0; font-size:.9rem;">Changing the definition of <code>eval:</code> / <code>metric:</code> <b>requires your approval even at L2</b>. If the PM could loosen its own acceptance criteria, the whole loop would be rendered meaningless by reward hacking.</p>
+    <p style="margin:8px 0 0; font-size:.82rem; color: var(--muted);">On top of that, diffs touching <code>repo.protected_paths</code> (eval/metric/truth calculation paths) are detected mechanically by the independent verification in §5, blocking indirect tampering from the worker.</p>
   </div>
 
-  <h2>7. 深掘り顧問相談 (C) — opus + effort max</h2>
+  <h2>7. Deep advisor consultation (C) — opus + effort max</h2>
 
-  <p>技術顧問エスカレーションは「opus + effort max」で行う。<code>effort max</code> は思考予算を最大に振る指定 (<code>/effort max</code> で切替)。<b>max を「思考専用」に閉じ込めるのが肝</b>。max で実装まで走らせるとトークンも壁時計も爆発するので、レイヤを分けて使う。</p>
+  <p>The technical-advisor escalation uses "opus + effort max." <code>effort max</code> allocates the maximum thinking budget (switch with <code>/effort max</code>). <b>The key is confining max to "thinking only."</b> Running implementation at max blows up both tokens and wall-clock, so use it in separated layers.</p>
 
   <table>
-    <tr><th>effort</th><th>用途</th></tr>
-    <tr><td>low</td><td>定型の short answer / 軽い分類</td></tr>
-    <tr><td>medium <span style="color: var(--muted);">(default)</span></td><td>通常巡回・PM 指揮・実装差配</td></tr>
-    <tr><td>high</td><td>込み入った設計判断・複数ファイル横断レビュー</td></tr>
-    <tr><td>xhigh</td><td>難バグの原因切り分け・大きめのリファクタ案出し</td></tr>
-    <tr><td><b style="color: var(--human);">max</b></td><td>顧問相談専用。停滞局面の原因分析と別アプローチ立案</td></tr>
+    <tr><th>effort</th><th>use</th></tr>
+    <tr><td>low</td><td>boilerplate short answers / light classification</td></tr>
+    <tr><td>medium <span style="color: var(--muted);">(default)</span></td><td>routine patrol / PM direction / dispatching implementation</td></tr>
+    <tr><td>high</td><td>involved design decisions / multi-file reviews</td></tr>
+    <tr><td>xhigh</td><td>isolating hard bugs / proposing larger refactors</td></tr>
+    <tr><td><b style="color: var(--human);">max</b></td><td>advisor consultation only. Root-cause analysis of stalls and proposing alternative approaches</td></tr>
   </table>
 
-  <div class="keypoint">effort は親セッションから subagent に継承される。手順は <code>/effort max</code> → 顧問 subagent (<code>model: opus</code>) 起動 → 終わったら <code>/effort medium</code> に戻す。max を素のまま放置しない。</div>
+  <div class="keypoint">effort is inherited from the parent session into subagents. The procedure is <code>/effort max</code> → launch the advisor subagent (<code>model: opus</code>) → return to <code>/effort medium</code> when done. Don't leave max sitting on.</div>
 
   <div class="ladder">
     <div class="rung r-advisor">
-      <b>顧問 (opus + max)</b>
-      <span>read-only。原因分析と別アプローチを出す。出口は<b>Issue 起票案まで</b>。実装はしない。</span>
+      <b>Advisor (opus + max)</b>
+      <span>Read-only. Produces root-cause analysis and alternative approaches. The exit is <b>a proposed Issue</b>. Does not implement.</span>
     </div>
     <span class="ladder-arrow">→</span>
     <div class="rung r-pm">
       <b>PM (opus + medium)</b>
-      <span>顧問の起票案を受けて Issue 分解と worker 差配。実装の指揮を取る。</span>
+      <span>Takes the advisor's proposed Issue, decomposes it, and dispatches workers. Directs the implementation.</span>
     </div>
     <span class="ladder-arrow">→</span>
     <div class="rung r-worker">
-      <b>実働 (sonnet)</b>
-      <span>worktree でコード実装・テスト。max は実装に使わない。</span>
+      <b>Worker (sonnet)</b>
+      <span>Implements code and tests in a worktree. max is not used for implementation.</span>
     </div>
   </div>
 
-  <div class="keypoint">発動条件は §2 の判定 C (直近 5 サイクル分の Log で metric 改善 0)、または通常巡回中に試行 5/5 到達。同一停滞局面につき<b>1 回だけ</b>。それでも案が出ない場合は通常 escalation でユーザーに上げる。起票の可否は autonomy に従い、顧問は直接 Issue を立てない (L0 は承認、L1+ は PM が起票)。</div>
+  <div class="keypoint">The trigger is decision C in §2 (0 metric improvement across the last 5 cycles of Log), or hitting attempt 5/5 during routine patrol. <b>Only once</b> per stall situation. If no proposal emerges even then, raise it to the user via normal escalation. Whether to file is governed by autonomy — the advisor never files an Issue directly (L0: approval, L1+: the PM files).</div>
 
-  <h2>8. dashboard.html — あなたの介入窓口</h2>
+  <h2>8. dashboard.html — your intervention window</h2>
 
-  <p>毎サイクル末、PM は <code>.claude/goals/_pm/dashboard.html</code> を再生成する。あなたはこれを見て介入・テコ入れを判断する。短報はそのフルパスを冒頭に出すだけで、詳細はダッシュボード側に集約する。</p>
+  <p>At the end of every cycle, the PM regenerates <code>.claude/goals/_pm/dashboard.html</code>. You look at this to decide whether to step in. The brief report just puts that full path at the top; the details are consolidated on the dashboard side.</p>
 
   <div class="dash-mock">
-    <div class="banner"><b>今サイクル: D — 通常巡回</b> · 直近 stalled なし、active 全て open Issue あり</div>
+    <div class="banner"><b>This cycle: D — routine patrol</b> · nothing recently stalled, all active have open Issues</div>
     <div class="row">
-      <div class="imp"><div class="name">bugfix <span style="color: var(--ok);">●</span></div><div class="nums">42 → 38 → target ≤20</div>P2 (3/5) · L0 (2/5 一致)</div>
-      <div class="imp"><div class="name">perf <span style="color: var(--warn);">●</span></div><div class="nums">350ms → 310ms → target ≤200ms</div>P1 (4/4) · L1 (5/5 → L2 昇格提案中)</div>
+      <div class="imp"><div class="name">bugfix <span style="color: var(--ok);">●</span></div><div class="nums">42 → 38 → target ≤20</div>P2 (3/5) · L0 (2/5 matches)</div>
+      <div class="imp"><div class="name">perf <span style="color: var(--warn);">●</span></div><div class="nums">350ms → 310ms → target ≤200ms</div>P1 (4/4) · L1 (5/5 → proposing promotion to L2)</div>
     </div>
-    <div class="interv">◆ 介入候補: #21 perf PR (L0 merge 判断待ち) · perf autonomy 昇格提案</div>
-    <div style="margin-top: 8px; color: var(--pm);">次回予想: D (open Issue 残あり)</div>
+    <div class="interv">◆ Intervention candidates: #21 perf PR (awaiting L0 merge decision) · perf autonomy promotion proposal</div>
+    <div style="margin-top: 8px; color: var(--pm);">Predicted next: D (open Issues remain)</div>
   </div>
 
-  <p>含む情報:</p>
+  <p>What it includes:</p>
   <ul>
-    <li><b>今サイクルの現在地</b>: 走らせた action (A〜E) と判定理由</li>
-    <li><b>improvement 毎のカード</b>: metric 推移 sparkline・現フェーズ進捗・凍結 Issue・autonomy level と判断突合の現状</li>
-    <li><b>介入候補セクション</b>: ユーザーに判断を仰ぎたい項目 (L0 escalation 案・顧問起票案・merge 待ち PR)</li>
-    <li><b>次回 <code>/tracer</code> の予想 action</b>: 次サイクルが A〜E のどれに当たりそうか</li>
+    <li><b>This cycle's position</b>: the action run (A–E) and the reason it was selected</li>
+    <li><b>A card per improvement</b>: metric trend sparkline, current phase progress, frozen Issues, autonomy level and the current state of decision matching</li>
+    <li><b>Intervention-candidates section</b>: items where the PM wants your judgment (L0 escalation proposals, advisor Issue proposals, PRs awaiting merge)</li>
+    <li><b>The predicted next action of <code>/tracer</code></b>: which of A–E the next cycle is likely to land on</li>
   </ul>
 
-  <div class="keypoint">作業を任せて見ない、ではなく <b>「ダッシュボードを見て介入判断する」</b> がこの skill のユーザー側の運用。短報はその入口、dashboard が本体。</div>
+  <div class="keypoint">Not "hand off the work and never look," but <b>"look at the dashboard and decide whether to intervene"</b> — that is the user-side operation of this skill. The brief report is the entry point; the dashboard is the real thing.</div>
 
-  <h2>9. 自己改善は 3 層で回る</h2>
-  <p>このループの自己改善は 3 ヶ所で同時に起きる。worker は失敗ログから学び、PM は metric で計画を組み直し、harness 自体も判断一致率で更新される。</p>
+  <h2>9. Self-improvement runs in three layers</h2>
+  <p>This loop's self-improvement happens in three places at once. Workers learn from failure logs, the PM restructures the plan from the metric, and the harness itself is updated by the decision-match rate.</p>
 
   <table>
-    <tr><th>層</th><th>仕組み</th><th>改善対象</th><th>報酬シグナル</th></tr>
+    <tr><th>Layer</th><th>Mechanism</th><th>What improves</th><th>Reward signal</th></tr>
     <tr>
       <td><span class="c-worker">L1 worker</span></td>
-      <td>失敗理由を Issue コメントに蓄積 → 次の試行はそれを読んで別アプローチ</td>
-      <td>成果物</td>
-      <td>eval (合否)</td>
+      <td>Accumulates failure reasons in Issue comments → the next attempt reads them and takes a different approach</td>
+      <td>the deliverable</td>
+      <td>eval (pass/fail)</td>
     </tr>
     <tr>
-      <td><span class="c-metric">L2 計画</span></td>
-      <td>metric 停滞 → 状態判定 C にリダイレクトされ顧問が Issue を再設計</td>
-      <td>計画</td>
-      <td>metric (数値)</td>
+      <td><span class="c-metric">L2 plan</span></td>
+      <td>Metric stalls → redirected to state decision C, and the advisor redesigns the Issues</td>
+      <td>the plan</td>
+      <td>metric (the number)</td>
     </tr>
     <tr>
       <td><span class="c-pm">L3 PM</span></td>
-      <td>判断突合 → autonomy 昇格 ／ 同型失敗の再発 → persona・フェーズ定義の修正提案（要承認）</td>
-      <td>PM の判断・harness 自体</td>
-      <td>判断一致率</td>
+      <td>Decision matching → autonomy promotion / recurrence of the same failure type → proposals to fix the persona and phase definitions (approval required)</td>
+      <td>the PM's judgment & the harness itself</td>
+      <td>decision-match rate</td>
     </tr>
   </table>
 
-  <h2>10. どの repo でも使える</h2>
+  <h2>10. Works in any repo</h2>
   <div class="card">
     <ul style="margin:0;">
-      <li>skill は global（<code>~/.claude/skills/tracer/</code>）、<b>state は各 repo の <code>.claude/goals/</code></b>。repo を跨いで state は混ざらない</li>
-      <li>init 時に repo の機構を検出して記録: worktree（<code>make wt-start</code> 等があれば利用、なければ <code>git worktree</code>）、実装フロー skill（issue-implement 系があれば踏襲）</li>
-      <li>autonomy の実績カウントも repo × improvement 単位</li>
+      <li>The skill is global (<code>~/.claude/skills/tracer/</code>), <b>state is in each repo's <code>.claude/goals/</code></b>. State never mixes across repos</li>
+      <li>At init it detects and records the repo's machinery: worktree (use <code>make wt-start</code> etc. if present, otherwise <code>git worktree</code>), implementation-flow skill (follow an issue-implement-style skill if present)</li>
+      <li>The autonomy track-record count is also per repo × improvement</li>
     </ul>
   </div>
 
-  <h2>まとめ</h2>
+  <h2>Summary</h2>
   <div class="card summary">
     <ul style="margin:0;">
-      <li>あなたが打つコマンドは <strong><code>/tracer</code> ただ 1 本</strong>。skill が state を読み 5 状態 (init / roadmap / 顧問 / 巡回 / 完了) から 1 つを実行する</li>
-      <li>あなたの仕事は <strong>「ダッシュボードを見て、詰まったら FB・テコ入れする」</strong>。設定対話と merge / escalation 回答もこの 1 コマンド経由</li>
-      <li>PM は「数値が動いたか」だけを真実として扱い、worker の自己申告では前進しない</li>
-      <li>記憶は全部 git / Issue / goal file にあるので、session が切れても巡回は壊れない</li>
-      <li>PM の権限は判断一致の実績（連続 5 回）で段階的に広がる。ただし合格基準だけは永久にあなたのもの</li>
-      <li>合格基準と計測コード (<code>repo.protected_paths</code>) は worker から守る。機械チェックで間接改変も遮断する</li>
+      <li>The only command you type is <strong><code>/tracer</code></strong>. The skill reads the state and runs one of five states (init / roadmap / advisor / patrol / completion)</li>
+      <li>Your job is <strong>"look at the dashboard, and give feedback / unblock when it gets stuck."</strong> Setup dialogue and merge / escalation answers also go through this one command</li>
+      <li>The PM treats only "did the number move" as truth, and never advances on the worker's self-report</li>
+      <li>All memory lives in git / Issues / the goal file, so patrols survive even when the session is cut</li>
+      <li>The PM's authority widens in stages based on a track record of agreement (5 in a row). But the acceptance criteria stay yours forever</li>
+      <li>The acceptance criteria and measurement code (<code>repo.protected_paths</code>) are protected from the worker. Indirect tampering is also blocked by a mechanical check</li>
     </ul>
   </div>
 

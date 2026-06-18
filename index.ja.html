@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tracer — 定量ゴール駆動の自律改善ループ (PM ハブ)</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2129;
+    --panel2: #212a35;
+    --line: #2e3a47;
+    --text: #e6edf3;
+    --muted: #94a3b3;
+    --pm: #ab87f5;      /* PM = 紫 */
+    --worker: #4fc3f7;  /* worker subagent = 青 */
+    --metric: #ffb74d;  /* metric/報酬 = 橙 */
+    --human: #f06292;   /* user = 桃 */
+    --ok: #66bb6a;
+    --ng: #ef5350;
+    --warn: #ffca28;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
+    line-height: 1.75;
+    padding: 40px 20px 80px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  .langswitch { text-align: right; font-size: .85rem; margin-bottom: 14px; }
+  .langswitch a { color: var(--muted); text-decoration: none; }
+  .langswitch a:hover { color: var(--text); }
+  .langswitch a.active { color: var(--pm); font-weight: 700; }
+  h1 {
+    font-size: 1.7rem;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--pm), var(--metric));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .lede { color: var(--muted); margin-bottom: 36px; font-size: .95rem; }
+  h2 {
+    font-size: 1.25rem;
+    margin: 48px 0 16px;
+    padding-left: 12px;
+    border-left: 4px solid var(--pm);
+  }
+  h3 { font-size: 1.02rem; margin: 20px 0 10px; }
+  p { margin-bottom: 12px; }
+  code {
+    background: #2a3340;
+    padding: 1px 7px;
+    border-radius: 5px;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .88em;
+    color: #ffd180;
+  }
+  ul { padding-left: 1.3em; margin-bottom: 10px; }
+  li { margin-bottom: 6px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 16px 0;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: .88rem; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: .8rem; }
+
+  /* ===== 全体図 ===== */
+  .arch { text-align: center; margin: 24px 0; }
+  .actor {
+    display: inline-block;
+    border-radius: 12px;
+    padding: 12px 26px;
+    font-weight: 700;
+    font-size: .95rem;
+    background: var(--panel2);
+  }
+  .actor.human { border: 2px solid var(--human); color: var(--human); }
+  .actor.pm { border: 2px solid var(--pm); color: var(--pm); padding: 16px 40px; font-size: 1.05rem; }
+  .actor.cmd-only {
+    background: #2a3340;
+    color: #ffd180;
+    font-family: "SF Mono", Menlo, monospace;
+    border: 1px dashed var(--pm);
+    padding: 10px 22px;
+    font-size: .9rem;
+  }
+  .varrow { color: var(--muted); font-size: 1.2rem; margin: 6px 0; }
+  .varrow small { font-size: .75rem; display: block; }
+  .workers { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+  .wbox {
+    background: var(--panel2);
+    border: 2px solid var(--worker);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: .82rem;
+    color: var(--worker);
+    font-weight: 700;
+  }
+  .wbox small { display: block; color: var(--muted); font-weight: 400; }
+  .statebar {
+    margin-top: 18px;
+    border: 2px dashed var(--metric);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: .82rem;
+    color: var(--metric);
+  }
+  .statebar b { display: block; margin-bottom: 2px; }
+  .statebar span { color: var(--muted); }
+  .dashbar {
+    margin-top: 10px;
+    border: 2px solid var(--human);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: .82rem;
+    color: var(--human);
+  }
+  .dashbar b { display: block; margin-bottom: 2px; }
+  .dashbar span { color: var(--muted); }
+  .keypoint {
+    background: rgba(240,98,146,.08);
+    border: 1px solid rgba(240,98,146,.4);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: .92rem;
+  }
+  .keypoint::before { content: "★ "; color: var(--human); }
+
+  /* ===== 状態機械 (5 actions) ===== */
+  .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 18px 0; }
+  .state {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--pm);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: .85rem;
+    position: relative;
+  }
+  .state .letter {
+    position: absolute; top: 10px; right: 12px;
+    color: var(--pm); font-weight: 800; font-size: 1.1rem;
+  }
+  .state b { display: block; margin-bottom: 6px; font-size: .95rem; }
+  .state .cond { color: var(--muted); font-size: .78rem; margin-bottom: 6px; }
+  .state .act { font-size: .82rem; }
+  .state.s-init { border-left-color: var(--worker); }
+  .state.s-init .letter { color: var(--worker); }
+  .state.s-roadmap { border-left-color: var(--worker); }
+  .state.s-roadmap .letter { color: var(--worker); }
+  .state.s-advisor { border-left-color: var(--ng); }
+  .state.s-advisor .letter { color: var(--ng); }
+  .state.s-cycle { border-left-color: var(--metric); }
+  .state.s-cycle .letter { color: var(--metric); }
+  .state.s-done { border-left-color: var(--ok); }
+  .state.s-done .letter { color: var(--ok); }
+
+  /* ===== 2層報酬 ===== */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+  .compare .card { margin: 0; }
+  .card.micro { border-top: 4px solid var(--ok); }
+  .card.macro { border-top: 4px solid var(--metric); }
+  .card.verify { border-top: 4px solid var(--ng); }
+  .tag {
+    display: inline-block; font-size: .75rem; font-weight: 700;
+    padding: 2px 12px; border-radius: 999px; margin-bottom: 10px;
+  }
+  .tag.t-micro { background: rgba(102,187,106,.15); color: var(--ok); }
+  .tag.t-macro { background: rgba(255,183,77,.15); color: var(--metric); }
+  .tag.t-verify { background: rgba(239,83,80,.15); color: var(--ng); }
+
+  /* ===== サイクルフロー ===== */
+  .steps { counter-reset: step; margin: 18px 0; }
+  .step {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+  }
+  .step .no {
+    counter-increment: step;
+    flex: 0 0 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: rgba(171,135,245,.15); color: var(--pm);
+    font-weight: 800; font-size: .9rem;
+  }
+  .step .no::before { content: counter(step); }
+  .step .body { font-size: .9rem; }
+  .step .body b { display: block; margin-bottom: 2px; }
+  .step .body span { color: var(--muted); font-size: .85rem; }
+  .branch { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .br {
+    border-radius: 8px; padding: 6px 12px; font-size: .8rem;
+    background: var(--panel2);
+  }
+  .br.ok { border: 1px solid var(--ok); color: var(--ok); }
+  .br.ng { border: 1px solid var(--ng); color: var(--ng); }
+  .br.warn { border: 1px solid var(--warn); color: var(--warn); }
+
+  /* ===== autonomy ===== */
+  .ladder { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; margin: 18px 0; }
+  .rung {
+    flex: 1 1 220px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: .85rem;
+  }
+  .rung b { display: block; font-size: 1rem; margin-bottom: 6px; }
+  .rung.l0 b { color: var(--human); }
+  .rung.l1 b { color: var(--warn); }
+  .rung.l2 b { color: var(--pm); }
+  .rung.r-advisor b { color: var(--human); }
+  .rung.r-pm b { color: var(--pm); }
+  .rung.r-worker b { color: var(--worker); }
+  .rung span { color: var(--muted); }
+  .ladder-arrow { align-self: center; color: var(--muted); font-weight: 700; font-size: 1.2rem; }
+
+  /* ===== dashboard mock ===== */
+  .dash-mock {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: .78rem;
+    color: var(--muted);
+    margin: 14px 0;
+    line-height: 1.5;
+  }
+  .dash-mock .banner {
+    background: rgba(171,135,245,.12);
+    border: 1px solid var(--pm);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    color: var(--pm);
+  }
+  .dash-mock .banner b { color: var(--text); font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; font-weight: 700; }
+  .dash-mock .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+  .dash-mock .imp {
+    background: var(--panel2);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  .dash-mock .imp .name { color: var(--text); font-weight: 700; }
+  .dash-mock .imp .nums { color: var(--metric); }
+  .dash-mock .interv {
+    background: rgba(255,202,40,.1);
+    border: 1px solid var(--warn);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--warn);
+  }
+
+  .guard { border-left: 4px solid var(--ng); }
+  .guard h3 { color: var(--ng); margin-top: 0; }
+
+  .summary {
+    background: linear-gradient(135deg, rgba(171,135,245,.08), rgba(255,183,77,.08));
+    border: 1px solid var(--pm);
+  }
+  .summary strong { color: var(--pm); }
+  .c-pm { color: var(--pm); } .c-worker { color: var(--worker); }
+  .c-metric { color: var(--metric); } .c-human { color: var(--human); }
+  .c-ok { color: var(--ok); } .c-ng { color: var(--ng); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="langswitch"><a href="index.html">English</a> | <a class="active">日本語</a></div>
+
+  <h1>tracer — 定量ゴール駆動の自律改善ループ</h1>
+  <p class="lede">「loop（再発火の器）＋外部 eval（合否）＋durable state（git/Issue）＋ゲート」の分離設計を、そのまま 1 つの skill に実装したもの。あなたが打つコマンドは <code>/tracer</code> ただ 1 本。skill が state を読んで、init / roadmap / 顧問 / 巡回 / 完了 のどれを実行すべきかを毎回判定する。</p>
+
+  <h2>1. 全体像 — あなたが打つのは <code>/tracer</code> だけ</h2>
+
+  <div class="arch">
+    <div class="actor human">ユーザー</div>
+    <div class="varrow">⇅ <small>対話の入口はこのコマンド 1 本（init 対話・escalation 回答・merge 判断もここに集まる）</small></div>
+    <div class="actor cmd-only">/tracer</div>
+    <div class="varrow">↓ <small>skill が state を読み 5 状態 (A〜E) から 1 つ選んで実行</small></div>
+    <div class="actor pm">PM (tracer)</div>
+    <div class="varrow">↓ <small>通常巡回 (D) では improvement 毎の作業 1 件ずつを並列 dispatch（worktree 隔離）</small></div>
+    <div class="workers">
+      <div class="wbox">bugfix worker<small>persona+eval を注入</small></div>
+      <div class="wbox">perf worker<small>persona+eval を注入</small></div>
+      <div class="wbox">kpi worker<small>persona+eval を注入</small></div>
+    </div>
+    <div class="statebar">
+      <b>durable state（PM の記憶はここ。session の context に依存しない）</b>
+      <span>各 repo の .claude/goals/&lt;improvement&gt;.md ／ GitHub Issue・PR ／ git 履歴 ／ _pm/decisions-&lt;improvement&gt;.md・activity-&lt;improvement&gt;.md</span>
+    </div>
+    <div class="dashbar">
+      <b>毎サイクル末に dashboard を再生成（介入判断の窓）</b>
+      <span>.claude/goals/_pm/dashboard-&lt;improvement&gt;.html ／ あなたはこれを見て介入・テコ入れする</span>
+    </div>
+  </div>
+
+  <div class="keypoint">improvement の worker は常駐セッションではない。PM が発火のたびに使い捨ての subagent として起動し、結果は Issue/PR/goal file に書き残させる。だから <code>/clear</code> しても次の発火で全部復元できる。</div>
+
+  <h2>2. 1 コマンドで何が起きるか — 5 状態の自動判定</h2>
+
+  <p><code>/tracer</code> を打つと、skill は state を読み <b>最初にマッチした action を 1 つだけ実行</b>する。判定は上から順 (A → E)。同サイクルに複数 action は走らせない (あなたの確認単位を 1 つに保つため)。</p>
+
+  <div class="states">
+    <div class="state s-init">
+      <span class="letter">A</span>
+      <b>init</b>
+      <div class="cond">goals/ が空 or improvement file 0 件</div>
+      <div class="act">改善対象を 1 つ対話で確定。persona / metric / eval / baseline / target / 期限を埋める。計測コマンドが実際に動くまで閉じない</div>
+    </div>
+    <div class="state s-roadmap">
+      <span class="letter">B</span>
+      <b>roadmap</b>
+      <div class="cond">improvement あるが Phases 空 / Issue 未起票</div>
+      <div class="act">全フェーズを書き切り、各フェーズで Issue 起票 (<code>label:goal:&lt;improvement&gt;</code>)</div>
+    </div>
+    <div class="state s-advisor">
+      <span class="letter">C</span>
+      <b>顧問 escalation</b>
+      <div class="cond">直近 5 サイクル分の metric Log で改善 0 の improvement あり</div>
+      <div class="act">opus + effort max で原因分析。Issue 起票案を出す（読み専、実装はしない）</div>
+    </div>
+    <div class="state s-cycle">
+      <span class="letter">D</span>
+      <b>通常巡回</b>
+      <div class="cond">active improvement で open Issue がある</div>
+      <div class="act">improvement 毎に metric 計測 → Issue 1 件 dispatch → 独立検証 → フェーズ判定</div>
+    </div>
+    <div class="state s-done">
+      <span class="letter">E</span>
+      <b>完了報告</b>
+      <div class="cond">全 active improvement が target 達成</div>
+      <div class="act">improvement を inactive 化、ループから外す。次に何を始めるか提案</div>
+    </div>
+  </div>
+
+  <div class="keypoint">優先順は厳密に上から。たとえば「open Issue は残ってるが metric が 5 サイクル動かない」なら、D ではなく C が走る。Issue を作業する前に計画自体を見直す、が設計意図。</div>
+
+  <h2>3. 報酬は 2 層 — 定性ゴールは受け付けない (RLVR 的)</h2>
+
+  <div class="compare">
+    <div class="card micro">
+      <span class="tag t-micro">micro 報酬 — eval</span>
+      <h3>Issue 1 件の合否ゲート</h3>
+      <ul>
+        <li>決定論的コマンド（例: <code>npm test && npm run lint</code>）</li>
+        <li>exit 0 = 合格。worker の自己申告は採用しない</li>
+        <li><b>合格しないと PR/merge に進めない</b>（回帰防止ゲート）</li>
+      </ul>
+    </div>
+    <div class="card macro">
+      <span class="tag t-macro">macro 報酬 — metric</span>
+      <h3>ゴール指標そのもの</h3>
+      <ul>
+        <li>例: エラー 42 件/週 → <b>20 件以下</b>（期限つき）</li>
+        <li>巡回毎に計測して goal file に時系列記録</li>
+        <li><b>フェーズ完了の判定基準は Issue 消化数ではなく metric の動き</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="keypoint">Issue を全部閉じたのに metric が動かない＝「作業の失敗」ではなく<b>「計画の誤り」シグナル</b>。次の発火で状態判定が D ではなく C に流れ、顧問が Issue を組み直す。ここが自己改善の核。</div>
+
+  <h2>4. 通常巡回 (D) の中身</h2>
+  <p>active improvement 毎に以下を踏む。state 復元 → 計測 → dispatch → 独立検証 → フェーズ判定 → ダッシュボード更新 + 短報。会話の記憶ではなく goal file から毎回ゼロから組み立てる。</p>
+
+  <div class="steps">
+    <div class="step"><span class="no"></span><div class="body">
+      <b>state 復元</b><span>goal file・判断ログを毎回ゼロから読み直す。会話の記憶に頼らない（context 枯渇対策）。</span>
+    </div></div>
+    <div class="step"><span class="no"></span><div class="body">
+      <b>metric 計測</b><span class="c-metric">巡回のたびに数値を取り、goal file の Log に追記。計測が壊れていたら作業せず escalation。</span>
+    </div></div>
+    <div class="step"><span class="no"></span><div class="body">
+      <b>dispatch（improvement 毎に Issue 1 件）</b><span>worker に persona・eval・<b>過去の失敗ログ</b>を渡して worktree で自走させる。複数 improvement は並列。</span>
+    </div></div>
+    <div class="step"><span class="no"></span><div class="body">
+      <b>独立検証</b><span>tamper check + verifier 分離の 2 段で合否を確定（§5）。</span>
+      <div class="branch">
+        <span class="br ok">独立検証 pass + eval 合格 → PR（L0: merge はあなたが判断 / L1+: PM が merge）</span>
+        <span class="br ng">不合格 → 試行 n/5 を Issue コメントに記録、次の発火で再挑戦</span>
+        <span class="br warn">5 回失敗 → escalation + その Issue は凍結</span>
+      </div>
+    </div></div>
+    <div class="step"><span class="no"></span><div class="body">
+      <b>フェーズ判定</b><span>Issue 全消化 + metric 改善 → 次フェーズへ。metric 停滞 → 次の発火で C にリダイレクト。target 達成 → 次の発火で E へ。</span>
+    </div></div>
+    <div class="step"><span class="no"></span><div class="body">
+      <b>dashboard 更新 + 短報</b><span>dashboard.html を再生成（§8）し、あなたに数行のサマリ。詳細は PR・Issue・dashboard に置き、チャットは薄く保つ。</span>
+    </div></div>
+  </div>
+
+  <h2>5. 独立検証 — worker の自己申告で前進しない</h2>
+
+  <p>合格処理の前に検証を 2 段で挟む。worker が「eval 通った」と言うだけでは PR は進まず、報酬関数 (eval / metric 計算 / truth) への間接改変も機械的に止める。<b>verifier</b> = 実装 worker とは別の subagent で、合否を独立に再確認する役。</p>
+
+  <div class="compare">
+    <div class="card verify">
+      <span class="tag t-verify">tamper check</span>
+      <h3>diff を <code>protected_paths</code> と突合</h3>
+      <ul>
+        <li><code>git diff --name-only origin/main...&lt;branch&gt;</code> を取る</li>
+        <li>goal file の <code>repo.protected_paths</code> と突合</li>
+        <li>1 ファイルでも hit したら eval 結果を無視して escalation</li>
+      </ul>
+    </div>
+    <div class="card verify">
+      <span class="tag t-verify">verifier 分離</span>
+      <h3>別 subagent が PR branch 上で eval 再実行</h3>
+      <ul>
+        <li>実装 worker と<b>別</b>の subagent を起動</li>
+        <li>PR branch を check-out させて eval を再走</li>
+        <li>合否を独立に確認 (自己申告に依存しない)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="keypoint">reward を稼ぐ側が reward を計算する側を書き換える経路を、プロンプトの禁止文ではなく機械チェックで遮断する。</div>
+
+  <div class="card">
+    <h3>protected_paths の対象と worker 禁則</h3>
+    <ul style="margin-bottom: 0;">
+      <li><b>protected_paths</b>: <code>eval</code> 実行コード / metric 計算スクリプト / truth データ / gate 周りの validation。goal file の <code>repo.protected_paths</code> に列挙</li>
+      <li><b>baseline 差替 flag の禁止</b>: <code>--accept-new-baseline</code> 等、合格基準を書き換える flag は worker に使わせない</li>
+      <li>必要があれば worker は実装せず Issue コメントに必要性を書いて終了 (ユーザー承認経由でのみ変更可)</li>
+    </ul>
+  </div>
+
+  <h2>6. 判断の段階委譲 — PM は実績で権限を獲得する</h2>
+  <p>PM の権限は固定ではなく、判断一致の実績で段階的に広げる。最初は全件相談 (L0)、5 回連続で推奨案と実決定が一致したら 1 段昇格する。</p>
+
+  <div class="ladder">
+    <div class="rung l0">
+      <b>L0 — 全件相談（初期値）</b>
+      <span>escalation・merge はあなたが決める。ただし PM は毎回「推奨案 + 懸念」を添える義務がある。</span>
+    </div>
+    <span class="ladder-arrow">→</span>
+    <div class="rung l1">
+      <b>L1 — 即決 + 事後報告</b>
+      <span>PM が決めて実行し、次の短報で報告。あなたには拒否権が残る。</span>
+    </div>
+    <span class="ladder-arrow">→</span>
+    <div class="rung l2">
+      <b>L2 — 記録のみ</b>
+      <span>判断ログに残し、週次サマリに集約。</span>
+    </div>
+  </div>
+
+  <ul>
+    <li>昇格条件: <b>PM の推奨案があなたの実決定と連続 5 回一致</b> → PM が昇格を提案、あなたが承認</li>
+    <li>不一致が 1 回出たら連続カウントは 0 に戻る</li>
+    <li>突合の証跡は <code>_pm/decisions.md</code>。「委譲してよいか」を感覚でなく数字で判断できる</li>
+    <li>autonomy は repo × improvement 単位</li>
+  </ul>
+
+  <div class="card guard">
+    <h3>例外: 報酬関数だけは絶対に委譲しない</h3>
+    <p style="margin:0; font-size:.9rem;"><code>eval:</code> / <code>metric:</code> の定義変更は autonomy が L2 でも<b>あなたの承認必須</b>。PM が自分で合格基準を緩められると、ループ全体が reward hacking で無意味化するため。</p>
+    <p style="margin:8px 0 0; font-size:.82rem; color: var(--muted);">さらに <code>repo.protected_paths</code> (eval/metric/truth 計算 path) への diff は §5 の独立検証で機械的に検出し、worker からの間接改変も遮断する。</p>
+  </div>
+
+  <h2>7. 深掘り顧問相談 (C) — opus + effort max</h2>
+
+  <p>技術顧問エスカレーションは「opus + effort max」で行う。<code>effort max</code> は思考予算を最大に振る指定 (<code>/effort max</code> で切替)。<b>max を「思考専用」に閉じ込めるのが肝</b>。max で実装まで走らせるとトークンも壁時計も爆発するので、レイヤを分けて使う。</p>
+
+  <table>
+    <tr><th>effort</th><th>用途</th></tr>
+    <tr><td>low</td><td>定型の short answer / 軽い分類</td></tr>
+    <tr><td>medium <span style="color: var(--muted);">(default)</span></td><td>通常巡回・PM 指揮・実装差配</td></tr>
+    <tr><td>high</td><td>込み入った設計判断・複数ファイル横断レビュー</td></tr>
+    <tr><td>xhigh</td><td>難バグの原因切り分け・大きめのリファクタ案出し</td></tr>
+    <tr><td><b style="color: var(--human);">max</b></td><td>顧問相談専用。停滞局面の原因分析と別アプローチ立案</td></tr>
+  </table>
+
+  <div class="keypoint">effort は親セッションから subagent に継承される。手順は <code>/effort max</code> → 顧問 subagent (<code>model: opus</code>) 起動 → 終わったら <code>/effort medium</code> に戻す。max を素のまま放置しない。</div>
+
+  <div class="ladder">
+    <div class="rung r-advisor">
+      <b>顧問 (opus + max)</b>
+      <span>read-only。原因分析と別アプローチを出す。出口は<b>Issue 起票案まで</b>。実装はしない。</span>
+    </div>
+    <span class="ladder-arrow">→</span>
+    <div class="rung r-pm">
+      <b>PM (opus + medium)</b>
+      <span>顧問の起票案を受けて Issue 分解と worker 差配。実装の指揮を取る。</span>
+    </div>
+    <span class="ladder-arrow">→</span>
+    <div class="rung r-worker">
+      <b>実働 (sonnet)</b>
+      <span>worktree でコード実装・テスト。max は実装に使わない。</span>
+    </div>
+  </div>
+
+  <div class="keypoint">発動条件は §2 の判定 C (直近 5 サイクル分の Log で metric 改善 0)、または通常巡回中に試行 5/5 到達。同一停滞局面につき<b>1 回だけ</b>。それでも案が出ない場合は通常 escalation でユーザーに上げる。起票の可否は autonomy に従い、顧問は直接 Issue を立てない (L0 は承認、L1+ は PM が起票)。</div>
+
+  <h2>8. dashboard.html — あなたの介入窓口</h2>
+
+  <p>毎サイクル末、PM は <code>.claude/goals/_pm/dashboard.html</code> を再生成する。あなたはこれを見て介入・テコ入れを判断する。短報はそのフルパスを冒頭に出すだけで、詳細はダッシュボード側に集約する。</p>
+
+  <div class="dash-mock">
+    <div class="banner"><b>今サイクル: D — 通常巡回</b> · 直近 stalled なし、active 全て open Issue あり</div>
+    <div class="row">
+      <div class="imp"><div class="name">bugfix <span style="color: var(--ok);">●</span></div><div class="nums">42 → 38 → target ≤20</div>P2 (3/5) · L0 (2/5 一致)</div>
+      <div class="imp"><div class="name">perf <span style="color: var(--warn);">●</span></div><div class="nums">350ms → 310ms → target ≤200ms</div>P1 (4/4) · L1 (5/5 → L2 昇格提案中)</div>
+    </div>
+    <div class="interv">◆ 介入候補: #21 perf PR (L0 merge 判断待ち) · perf autonomy 昇格提案</div>
+    <div style="margin-top: 8px; color: var(--pm);">次回予想: D (open Issue 残あり)</div>
+  </div>
+
+  <p>含む情報:</p>
+  <ul>
+    <li><b>今サイクルの現在地</b>: 走らせた action (A〜E) と判定理由</li>
+    <li><b>improvement 毎のカード</b>: metric 推移 sparkline・現フェーズ進捗・凍結 Issue・autonomy level と判断突合の現状</li>
+    <li><b>介入候補セクション</b>: ユーザーに判断を仰ぎたい項目 (L0 escalation 案・顧問起票案・merge 待ち PR)</li>
+    <li><b>次回 <code>/tracer</code> の予想 action</b>: 次サイクルが A〜E のどれに当たりそうか</li>
+  </ul>
+
+  <div class="keypoint">作業を任せて見ない、ではなく <b>「ダッシュボードを見て介入判断する」</b> がこの skill のユーザー側の運用。短報はその入口、dashboard が本体。</div>
+
+  <h2>9. 自己改善は 3 層で回る</h2>
+  <p>このループの自己改善は 3 ヶ所で同時に起きる。worker は失敗ログから学び、PM は metric で計画を組み直し、harness 自体も判断一致率で更新される。</p>
+
+  <table>
+    <tr><th>層</th><th>仕組み</th><th>改善対象</th><th>報酬シグナル</th></tr>
+    <tr>
+      <td><span class="c-worker">L1 worker</span></td>
+      <td>失敗理由を Issue コメントに蓄積 → 次の試行はそれを読んで別アプローチ</td>
+      <td>成果物</td>
+      <td>eval (合否)</td>
+    </tr>
+    <tr>
+      <td><span class="c-metric">L2 計画</span></td>
+      <td>metric 停滞 → 状態判定 C にリダイレクトされ顧問が Issue を再設計</td>
+      <td>計画</td>
+      <td>metric (数値)</td>
+    </tr>
+    <tr>
+      <td><span class="c-pm">L3 PM</span></td>
+      <td>判断突合 → autonomy 昇格 ／ 同型失敗の再発 → persona・フェーズ定義の修正提案（要承認）</td>
+      <td>PM の判断・harness 自体</td>
+      <td>判断一致率</td>
+    </tr>
+  </table>
+
+  <h2>10. どの repo でも使える</h2>
+  <div class="card">
+    <ul style="margin:0;">
+      <li>skill は global（<code>~/.claude/skills/tracer/</code>）、<b>state は各 repo の <code>.claude/goals/</code></b>。repo を跨いで state は混ざらない</li>
+      <li>init 時に repo の機構を検出して記録: worktree（<code>make wt-start</code> 等があれば利用、なければ <code>git worktree</code>）、実装フロー skill（issue-implement 系があれば踏襲）</li>
+      <li>autonomy の実績カウントも repo × improvement 単位</li>
+    </ul>
+  </div>
+
+  <h2>まとめ</h2>
+  <div class="card summary">
+    <ul style="margin:0;">
+      <li>あなたが打つコマンドは <strong><code>/tracer</code> ただ 1 本</strong>。skill が state を読み 5 状態 (init / roadmap / 顧問 / 巡回 / 完了) から 1 つを実行する</li>
+      <li>あなたの仕事は <strong>「ダッシュボードを見て、詰まったら FB・テコ入れする」</strong>。設定対話と merge / escalation 回答もこの 1 コマンド経由</li>
+      <li>PM は「数値が動いたか」だけを真実として扱い、worker の自己申告では前進しない</li>
+      <li>記憶は全部 git / Issue / goal file にあるので、session が切れても巡回は壊れない</li>
+      <li>PM の権限は判断一致の実績（連続 5 回）で段階的に広がる。ただし合格基準だけは永久にあなたのもの</li>
+      <li>合格基準と計測コード (<code>repo.protected_paths</code>) は worker から守る。機械チェックで間接改変も遮断する</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

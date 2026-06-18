@@ -81,16 +81,17 @@ You can run multiple improvements in parallel (state is separated per improvemen
 
 The design rationale is laid out in a **self-contained HTML** page (no dependencies, zero JS).
 
-- 🌐 GitHub Pages: <https://shurijoc.github.io/tracer/>
-- 📄 In the repo: [`index.html`](index.html) (open locally)
+- 🌐 GitHub Pages: <https://shurijoc.github.io/tracer/> (日本語: <https://shurijoc.github.io/tracer/index.ja.html>)
+- 📄 In the repo: [`index.html`](index.html) / [`index.ja.html`](index.ja.html) (open locally)
 
-> The HTML design doc and the operational spec (`SKILL.md`) are currently written in Japanese.
+> The operational spec (`SKILL.md`) is currently written in Japanese only.
 
 ## Repository layout
 
 ```
 SKILL.md                   # the skill itself (the spec Claude reads at runtime)
-index.html                 # design docs (self-contained HTML, zero dependencies)
+index.html                 # design docs (self-contained HTML, zero dependencies; English base)
+index.ja.html              # design docs (Japanese)
 scripts/c4-to-section.py   # generates the C4 section HTML fragment from c4.json
 templates/                 # templates for goal / dashboard / c4 / activity / decisions
 ```

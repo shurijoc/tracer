@@ -81,14 +81,15 @@ cd path/to/your-repo
 
 設計思想の図解は **self-contained HTML** にまとまっている (依存なし・JS ゼロ)。
 
-- 🌐 GitHub Pages: <https://shurijoc.github.io/tracer/>
-- 📄 リポジトリ内: [`index.html`](index.html) (ローカルで開く)
+- 🌐 GitHub Pages: <https://shurijoc.github.io/tracer/index.ja.html> (English: <https://shurijoc.github.io/tracer/>)
+- 📄 リポジトリ内: [`index.ja.html`](index.ja.html) / [`index.html`](index.html) (ローカルで開く)
 
 ## ディレクトリ構成
 
 ```
 SKILL.md                   # skill 本体 (実行時に Claude が読む仕様)
-index.html                 # 設計解説 (依存ゼロの self-contained HTML)
+index.html                 # 設計解説 (依存ゼロの self-contained HTML・英語が base)
+index.ja.html              # 設計解説 (日本語)
 scripts/c4-to-section.py   # c4.json → C4 セクション HTML フラグメント生成
 templates/                 # goal / dashboard / c4 / activity / decisions の雛形
 ```

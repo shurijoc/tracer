@@ -38,4 +38,11 @@ skill が運用時に作る state (`<対象repo>/.claude/goals/`) は **この r
 
 ## ドキュメントの二重化
 
-`README.md` (英語・主) / `README.ja.md` (日本語) / `index.html` (依存ゼロ・JS なしの設計解説、GitHub Pages 公開) は同じ設計思想を説明する。設計の芯を変えたら 3 者を同期させる。README は英語を base にし日本語版を併記する方針 (`SKILL.md` と `index.html` は運用仕様・トリガー語の都合で日本語のまま)。GitHub Pages は `main` ブランチの **root** (`/`) を公開ソースにしている (`gh api repos/<owner>/tracer/pages` の `source.path` が `/`)。
+対外ドキュメントは **英語を base、日本語を `.ja` 中置の変種** にする命名規約に統一している:
+
+- `README.md` (英語・base) ↔ `README.ja.md` (日本語)
+- `index.html` (英語・base) ↔ `index.ja.html` (日本語) — どちらも依存ゼロ・JS なしの設計解説、GitHub Pages 公開
+
+同じ内容の 4 ファイル + 言語切替リンクなので、設計の芯を変えたら 4 者すべてを同期させる。`SKILL.md` と `templates/` は運用仕様・skill トリガー語の都合で日本語のまま (英語化すると skill 挙動に影響するため触らない)。
+
+GitHub Pages は `main` ブランチの **root** (`/`) を公開ソースにしている (`gh api repos/<owner>/tracer/pages` の `source.path` が `/`)。`https://shurijoc.github.io/tracer/` → `index.html` (英語)、`.../index.ja.html` → 日本語。
