@@ -1,11 +1,27 @@
 {
   "_comment": "Baseline behavioral-eval run. `answers` are MODEL-PRODUCED (not ground truth — ground truth lives in cases/*.json `expected`). Re-grade with: python evals/run.py grade evals/baseline.json. Update this file when you re-baseline after a SKILL.md change.",
   "run_date": "2026-06-18",
-  "answer_model": "claude-sonnet-4-6",
+  "answer_model": "claude-opus-4-8",
   "judge": "code-based exact-match (evals/run.py)",
   "samples_per_case": "1, with 3x resampling on divergences",
-  "model_caveat": "tracer's main loop runs on OPUS, but this baseline was taken on SONNET. Two of the sonnet divergences are model-capability gaps that DO NOT reproduce on opus (see opus_spotcheck). The suite should be re-baselined on opus — tracked in an issue.",
+  "model_caveat": "tracer's main loop runs on OPUS. This baseline was taken on opus (claude-opus-4-8) and is the reference. sonnet answers are preserved in sonnet_reference for robustness tracking only — they are NOT the gate. Two sonnet divergences were model-capability gaps that do NOT reproduce on opus.",
   "answers": {
+    "as-empty-goals": "A",
+    "as-phases-empty": "B",
+    "as-metric-stalled-priority": "C",
+    "as-open-issues-progress": "D",
+    "as-target-hit": "E",
+    "as-new-improvement-added": "A",
+    "trig-junkai": "YES",
+    "trig-goal-loop": "YES",
+    "trig-pm-patrol": "YES",
+    "trig-neg-readme": "NO",
+    "trig-neg-bugfix": "NO",
+    "trig-neg-test": "NO"
+  },
+  "score": "opus 12/12 pass",
+  "sonnet_reference": {
+    "note": "sonnet (claude-sonnet-4-6) answers kept as weak-model robustness reference only. NOT the eval gate. sonnet score was 10/12; two gaps were model-capability issues that resolve on opus.",
     "as-empty-goals": "A",
     "as-phases-empty": "B",
     "as-metric-stalled-priority": "C",
@@ -19,26 +35,17 @@
     "trig-neg-bugfix": "NO",
     "trig-neg-test": "NO"
   },
-  "score": "sonnet 10/12 pass",
-  "opus_spotcheck": {
-    "note": "After clarifying the C/D wording in SKILL.md Step 1, these cases were re-checked on opus (the model tracer runs on).",
-    "as-open-issues-progress": "D (2/2) — PASS on opus (sonnet returns C)",
-    "as-new-improvement-added": "A (1/1) — PASS on opus (sonnet returned B once; was noise)"
-  },
-  "open_findings": [
-    {
-      "case": "trig-pm-patrol",
-      "expected": "YES",
-      "stable_answer": "NO (sonnet, 3 samples: NO,NO,NO; not re-checked on opus)",
-      "severity": "medium",
-      "note": "'PM 巡回' is listed as a trigger phrase but does not reliably fire from the description alone. Decide: strengthen the description, or accept 'PM 巡回' alone as a non-trigger (set expected=NO). Re-check on opus first."
-    }
-  ],
+  "open_findings": [],
   "resolved_findings": [
     {
       "case": "as-open-issues-progress",
       "was": "sonnet stably picked C (advisor escalation) for the workhorse open-Issues + improving-metric state",
       "resolution": "Clarified SKILL.md Step 1: C now requires >=5 logged cycles AND non-improvement; D states 'not stalled' explicitly. On opus the case resolves to D. Remaining gap is sonnet-only."
+    },
+    {
+      "case": "trig-pm-patrol",
+      "was": "sonnet: 3/3 samples returned NO (expected YES); severity: medium",
+      "resolution": "opus: 3/3 samples returned YES = expected. sonnet-only capability gap. No SKILL.md change needed — opus is the reference model."
     }
   ]
 }
