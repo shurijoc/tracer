@@ -38,4 +38,4 @@ skill が運用時に作る state (`<対象repo>/.claude/goals/`) は **この r
 
 ## ドキュメントの二重化
 
-`README.md` (人間向け概要) と `index.html` (依存ゼロ・JS なしの設計解説、GitHub Pages 公開、`docs/overview.html` からリネーム) は同じ設計思想を説明する。設計の芯を変えたら両方を同期させる。
+`README.md` (英語・主) / `README.ja.md` (日本語) / `index.html` (依存ゼロ・JS なしの設計解説、GitHub Pages 公開) は同じ設計思想を説明する。設計の芯を変えたら 3 者を同期させる。README は英語を base にし日本語版を併記する方針 (`SKILL.md` と `index.html` は運用仕様・トリガー語の都合で日本語のまま)。GitHub Pages は `main` ブランチの **root** (`/`) を公開ソースにしている (`gh api repos/<owner>/tracer/pages` の `source.path` が `/`)。

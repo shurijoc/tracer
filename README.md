@@ -3,92 +3,96 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code skill](https://img.shields.io/badge/Claude_Code-skill-7c5cff.svg)](https://claude.com/claude-code)
 
-> 定量ゴール (North Star Metric) に向かって**自律改善ループ**を PM として回す [Claude Code](https://claude.com/claude-code) skill。
+**English** | [日本語](README.ja.md)
 
-打つコマンドは `/tracer` の 1 本だけ。skill が現在の state を読んで、init / roadmap / 顧問 escalation / 通常巡回 / 完了報告 のいずれかを自動で実行する。毎サイクル末に improvement 毎の HTML ダッシュボードを再生成し、人間はそれを見て介入判断する。
+> A [Claude Code](https://claude.com/claude-code) skill that runs an **autonomous improvement loop** as a PM, driving toward a quantitative goal (a North Star Metric).
 
-## 目次
+You only ever type `/tracer`. The skill reads the current state and automatically runs one of five actions — init, roadmap, advisor escalation, routine patrol, or completion report. At the end of every cycle it regenerates a per-improvement HTML dashboard, and you intervene based on what you see there.
 
-- [これは何か](#これは何か)
-- [設計思想](#設計思想)
-- [前提](#前提)
-- [インストール](#インストール)
-- [クイックスタート](#クイックスタート)
-- [機能一覧](#機能一覧)
-- [仕組み (設計解説 HTML)](#仕組み-設計解説-html)
-- [ディレクトリ構成](#ディレクトリ構成)
+## Table of Contents
+
+- [What is this?](#what-is-this)
+- [Design principles](#design-principles)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Features](#features)
+- [How it works (design docs)](#how-it-works-design-docs)
+- [Repository layout](#repository-layout)
 - [License](#license)
 
-## これは何か
+## What is this?
 
-「数値で測れる改善目標」を 1 つ決めると、tracer がその達成までを PM として回し続ける。
+Pick one improvement target that can be measured as a number, and tracer keeps working toward it as a PM until the goal is met.
 
-- **対象**: テストのエラー件数、API 応答速度、プロダクト KPI など、決定論的に数値が取れる改善対象 (improvement)
-- **やること**: ゴールの分解 (roadmap) → GitHub Issue 起票 → worktree 隔離での実装 dispatch → 合否検証 → metric 計測 → ダッシュボード更新、を `/tracer` 1 本で回す
-- **人間の役割**: ダッシュボードを見て、詰まったらフィードバック・テコ入れする。合格基準 (eval / metric) の変更は常に人間の承認が要る
+- **Targets** — anything with a deterministic numeric measure: test error counts, API latency, product KPIs (an *improvement*).
+- **What it does** — decomposes the goal (roadmap) → files GitHub Issues → dispatches implementation in isolated worktrees → verifies pass/fail → measures the metric → updates the dashboard, all from a single `/tracer`.
+- **Your role** — watch the dashboard and step in with feedback when things stall. Changing the acceptance criteria (`eval` / `metric`) always requires your approval.
 
-state は実行時の repo の `.claude/goals/` に置かれる。skill 自体はどの repo でも使える。
+State lives in the target repo's `.claude/goals/`. The skill itself works in any repo.
 
-## 設計思想
+## Design principles
 
-- **loop + eval + durable state + gate の分離**: 再発火の器 (loop)、合否ゲート (外部 eval)、git/Issue に置く durable state、報酬関数の保護ゲートをそれぞれ独立に持つ
-- **2 層報酬**: micro = Issue 単位の合否 `eval` (決定論的・exit 0)、macro = ゴール指標 `metric`。フェーズ/ゴールの完了は Issue 消化数ではなく **metric の改善**で判定する
-- **reward hacking 防止**: `eval` / `metric` 定義の変更はユーザー承認必須。`protected_paths` への diff は tamper check で自動 escalation、worker の自己申告は別 subagent の再実行で独立検証する
-- **autonomy L0→L1→L2**: PM の権限は判断一致の実績 (連続 5 回) で段階的に広がる。合格基準だけは永久にユーザーのもの
-- **HTML dashboard で介入判断**: 毎サイクル末にダッシュボードを再生成。人間は「ダッシュボードを見て、詰まったら FB・テコ入れする」のが運用
+- **Separation of loop + eval + durable state + gate** — the re-entry vehicle (loop), the pass/fail gate (external eval), the durable state in git/Issues, and the reward-function guard gate are each held independently.
+- **Two-layer reward** — micro = per-Issue pass/fail `eval` (deterministic, exit 0); macro = the goal `metric`. Phase/goal completion is judged by **metric improvement**, not by the number of Issues closed.
+- **Reward-hacking prevention** — changes to `eval` / `metric` definitions require user approval. Diffs touching `protected_paths` auto-escalate via a tamper check, and a worker's self-reported result is independently re-verified by a separate subagent.
+- **Autonomy L0→L1→L2** — the PM's authority widens in stages based on a track record of agreement (5 consecutive matches). The acceptance criteria stay yours forever.
+- **Intervene via the HTML dashboard** — the dashboard is regenerated every cycle. The operating model is "look at the dashboard, and give feedback / unblock when it gets stuck."
 
-## 前提
+## Requirements
 
-- [Claude Code](https://claude.com/claude-code) 導入済み
-- `gh auth login` 済み (roadmap モードで GitHub Issue を起票するため)
-- C4 図の生成には Node.js (`npx` 経由で mermaid-cli を取得) が必要。無くても巡回は 0 終了で継続する
+- [Claude Code](https://claude.com/claude-code) installed
+- `gh auth login` completed (the roadmap mode files GitHub Issues)
+- Node.js for C4 diagram generation (mermaid-cli is fetched via `npx`). Without it, patrols still exit 0 and continue.
 
-## インストール
+## Installation
 
-symlink で入れる。`git pull` で skill が自動更新される構成。
+Install via symlink so that `git pull` keeps the skill up to date.
 
 ```bash
 git clone https://github.com/shurijoc/tracer.git
-ln -s "$(pwd)/tracer" ~/.claude/skills/tracer   # リンク名は tracer 固定 (frontmatter name と一致させる)
+ln -s "$(pwd)/tracer" ~/.claude/skills/tracer   # the link name must be "tracer" (match the frontmatter name)
 ```
 
-## クイックスタート
+## Quick start
 
-改善したい repo のルートで `/tracer` を実行する。
+Run `/tracer` from the root of the repo you want to improve.
 
-1. **初回 (init モード)**: 改善対象 (improvement) の persona / metric (計測コマンド) / eval (合否コマンド) を対話で収集する
-2. **2 回目以降**: skill が state を読んで roadmap → 通常巡回 → 完了報告 を自動で進める
+1. **First run (init mode)** — interactively collects the improvement's persona / metric (measurement command) / eval (pass-fail command).
+2. **Subsequent runs** — the skill reads the state and automatically advances through roadmap → routine patrol → completion report.
 
 ```bash
 cd path/to/your-repo
-# Claude Code で:
+# In Claude Code:
 /tracer
 ```
 
-複数の improvement を並走させてよい (state は improvement 毎に分離される)。
+You can run multiple improvements in parallel (state is separated per improvement).
 
-## 機能一覧
+## Features
 
-- `/tracer` 1 コマンドで 5 状態 (init / roadmap / 顧問 escalation / 通常巡回 / 完了報告) を自動判定・実行
-- improvement (改善対象) の**並走**サポート (state は improvement 毎に分離)
-- repo 共通の C4 アーキテクチャモデル (`c4.json`) を Mermaid → mmdc で SVG 化し、dashboard にインライン
-- metric 5 サイクル停滞時の顧問 escalation (opus + effort max)
-- worktree 隔離での Issue 実装フロー dispatch、独立検証 (tamper check + verifier 分離)
+- A single `/tracer` command auto-detects and runs one of five states (init / roadmap / advisor escalation / routine patrol / completion report)
+- **Parallel** improvements (state is separated per improvement)
+- A repo-wide C4 architecture model (`c4.json`) rendered to SVG via Mermaid → mmdc and inlined into the dashboard
+- Advisor escalation (opus + effort max) when the metric stalls for 5 cycles
+- Issue implementation dispatched in isolated worktrees, with independent verification (tamper check + separate verifier)
 
-## 仕組み (設計解説 HTML)
+## How it works (design docs)
 
-設計思想の図解は **self-contained HTML** にまとまっている (依存なし・JS ゼロ)。
+The design rationale is laid out in a **self-contained HTML** page (no dependencies, zero JS).
 
 - 🌐 GitHub Pages: <https://shurijoc.github.io/tracer/>
-- 📄 リポジトリ内: [`index.html`](index.html) (ローカルで開く)
+- 📄 In the repo: [`index.html`](index.html) (open locally)
 
-## ディレクトリ構成
+> The HTML design doc and the operational spec (`SKILL.md`) are currently written in Japanese.
+
+## Repository layout
 
 ```
-SKILL.md                   # skill 本体 (実行時に Claude が読む仕様)
-index.html                 # 設計解説 (依存ゼロの self-contained HTML)
-scripts/c4-to-section.py   # c4.json → C4 セクション HTML フラグメント生成
-templates/                 # goal / dashboard / c4 / activity / decisions の雛形
+SKILL.md                   # the skill itself (the spec Claude reads at runtime)
+index.html                 # design docs (self-contained HTML, zero dependencies)
+scripts/c4-to-section.py   # generates the C4 section HTML fragment from c4.json
+templates/                 # templates for goal / dashboard / c4 / activity / decisions
 ```
 
 ## License
