@@ -1,0 +1,44 @@
+{
+  "_comment": "Baseline behavioral-eval run. `answers` are MODEL-PRODUCED (not ground truth — ground truth lives in cases/*.json `expected`). Re-grade with: python evals/run.py grade evals/baseline.json. Update this file when you re-baseline after a SKILL.md change.",
+  "run_date": "2026-06-18",
+  "answer_model": "claude-sonnet-4-6",
+  "judge": "code-based exact-match (evals/run.py)",
+  "samples_per_case": "1, with 3x resampling on the 3 first-round divergences",
+  "answers": {
+    "as-empty-goals": "A",
+    "as-phases-empty": "B",
+    "as-metric-stalled-priority": "C",
+    "as-open-issues-progress": "C",
+    "as-target-hit": "E",
+    "as-new-improvement-added": "A",
+    "trig-junkai": "YES",
+    "trig-goal-loop": "YES",
+    "trig-pm-patrol": "NO",
+    "trig-neg-readme": "NO",
+    "trig-neg-bugfix": "NO",
+    "trig-neg-test": "NO"
+  },
+  "score": "10/12 pass (sonnet)",
+  "open_findings": [
+    {
+      "case": "as-open-issues-progress",
+      "expected": "D",
+      "stable_answer": "C (3 samples: B,C,C)",
+      "severity": "high",
+      "note": "The workhorse state (active improvement, open Issues, metric improving) does NOT robustly resolve to D (routine patrol). Models reach C (advisor escalation) instead. Hypothesis: the C condition '直近5サイクル分の metric Log で改善0' is easy to misapply when fewer than 5 cycles are logged or improvement is modest, and it is checked before D. Proposed fix (needs approval): tighten C to require >=5 logged cycles AND explicit non-improvement, and/or state D's 'not stalled' precondition explicitly."
+    },
+    {
+      "case": "trig-pm-patrol",
+      "expected": "YES",
+      "stable_answer": "NO (3 samples: NO,NO,NO)",
+      "severity": "medium",
+      "note": "'PM 巡回' is listed as a trigger phrase in the description but does not reliably fire — it reads as a generic phrase without the 'tracer' context. Proposed fix (needs approval): either strengthen the description's trigger wording, or accept 'PM 巡回' alone as a non-trigger and change expected to NO."
+    }
+  ],
+  "noise_observed": [
+    {
+      "case": "as-target-hit",
+      "note": "First sample returned D, two resamples returned E (the expected). Treated as variance; expected E retained."
+    }
+  ]
+}

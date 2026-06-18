@@ -1,0 +1,50 @@
+[
+  {
+    "id": "trig-junkai",
+    "kind": "triggering",
+    "tags": ["positive"],
+    "expected": "YES",
+    "rationale": "「tracer 巡回」は description のトリガー語そのもの。",
+    "prompt": "Read ONLY the `description:` frontmatter of the tracer skill (~/.claude/skills/tracer/SKILL.md). A user sends this message to Claude Code:\n\n  \"tracer で巡回して\"\n\nBased only on that description, should the tracer skill be selected? Answer ONLY YES or NO."
+  },
+  {
+    "id": "trig-goal-loop",
+    "kind": "triggering",
+    "tags": ["positive"],
+    "expected": "YES",
+    "rationale": "「ゴールループ」は description が明示するトリガー語。",
+    "prompt": "Read ONLY the `description:` frontmatter of the tracer skill (~/.claude/skills/tracer/SKILL.md). A user sends this message to Claude Code:\n\n  \"ゴールループを一周回して\"\n\nBased only on that description, should the tracer skill be selected? Answer ONLY YES or NO."
+  },
+  {
+    "id": "trig-pm-patrol",
+    "kind": "triggering",
+    "tags": ["positive"],
+    "expected": "YES",
+    "rationale": "「PM 巡回」も description のトリガー語。",
+    "prompt": "Read ONLY the `description:` frontmatter of the tracer skill (~/.claude/skills/tracer/SKILL.md). A user sends this message to Claude Code:\n\n  \"PM 巡回お願い\"\n\nBased only on that description, should the tracer skill be selected? Answer ONLY YES or NO."
+  },
+  {
+    "id": "trig-neg-readme",
+    "kind": "triggering",
+    "tags": ["negative"],
+    "expected": "NO",
+    "rationale": "README 編集はゴール駆動の自律改善ループと無関係。発火してはいけない (負例)。",
+    "prompt": "Read ONLY the `description:` frontmatter of the tracer skill (~/.claude/skills/tracer/SKILL.md). A user sends this message to Claude Code:\n\n  \"README を英語に書き直して\"\n\nBased only on that description, should the tracer skill be selected? Answer ONLY YES or NO."
+  },
+  {
+    "id": "trig-neg-bugfix",
+    "kind": "triggering",
+    "tags": ["negative"],
+    "expected": "NO",
+    "rationale": "単発のバグ修正依頼は metric 駆動ループではない。発火してはいけない (負例)。",
+    "prompt": "Read ONLY the `description:` frontmatter of the tracer skill (~/.claude/skills/tracer/SKILL.md). A user sends this message to Claude Code:\n\n  \"このスタックトレースのバグを直して\"\n\nBased only on that description, should the tracer skill be selected? Answer ONLY YES or NO."
+  },
+  {
+    "id": "trig-neg-test",
+    "kind": "triggering",
+    "tags": ["negative"],
+    "expected": "NO",
+    "rationale": "テスト追加依頼は単発タスク。発火してはいけない (負例)。",
+    "prompt": "Read ONLY the `description:` frontmatter of the tracer skill (~/.claude/skills/tracer/SKILL.md). A user sends this message to Claude Code:\n\n  \"この関数にユニットテストを追加して\"\n\nBased only on that description, should the tracer skill be selected? Answer ONLY YES or NO."
+  }
+]

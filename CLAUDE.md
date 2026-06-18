@@ -4,7 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## このリポジトリの性質
 
-これはアプリではなく **Claude Code skill `tracer` 本体のリポジトリ**。成果物は「Claude が実行時に読む仕様 (`SKILL.md`) + 補助スクリプト + テンプレート + 設計解説 HTML」。ビルド/lint/テストのパイプラインは存在しない。
+これはアプリではなく **Claude Code skill `tracer` 本体のリポジトリ**。成果物は「Claude が実行時に読む仕様 (`SKILL.md`) + 補助スクリプト + テンプレート + 設計解説 HTML」。
+
+**harness engineering の運用がある**: `SKILL.md` / `templates/` / `scripts/` を変える時は「見た目 OK」でマージしない。eval で gate する。手順・原則は [`HARNESS.md`](HARNESS.md)、eval スイートは `evals/`。最低限:
+
+```bash
+python3 evals/run.py det                    # 決定論: c4-to-section.py のコードテスト
+python3 evals/run.py grade evals/baseline.json   # behavioral: golden cases を採点 (red あれば exit 1)
+```
+
+`SKILL.md` を変えたら必ず両レイヤを再実行し、`det` は緑維持・既存 green を red にしない。ground truth (`evals/cases/*.json` の `expected`) は人間所有で、model 出力に合わせて書き換えない (oracle problem)。`eval:`/`metric:`/`protected_paths` の意味変更は承認必須。変更は `CHANGELOG.md` に記録。
 
 **配布は symlink**: `~/.claude/skills/tracer` がこの repo を指す。よってここの `SKILL.md` / `templates/` / `scripts/` への編集は、インストール済み skill の挙動に即時反映される (`git pull` = skill 更新)。frontmatter の `name: tracer` と symlink 名・skill 名は一致させること。
 
@@ -16,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 python3 scripts/c4-to-section.py <c4.json path> [<improvement name>]
 ```
 
-検証方法 (専用テストは無いので手動実行で確認):
+検証方法 (`python3 evals/run.py det` がこの不変条件を自動テストする):
 - 異常系: 存在しない path / 壊れた JSON / `npx` 不在 / `mmdc` 失敗 — **いずれも exit 0 + フォールバック断片**を返す契約。巡回を壊さないため。この不変条件を壊す変更は禁止。
 - 正常系には Node.js (`npx -y -p @mermaid-js/mermaid-cli mmdc` で都度取得) が必要。第 2 引数の improvement 名に一致する `node.improvements` の node が青枠ハイライトされる。
 
