@@ -94,8 +94,8 @@ git repo でない場所では動かさない (state の監査性が成立しな
 |---|---|
 | A. `<repo>/.claude/goals/` が空 or improvement file 0 件 | **init モード** (repo 全体で 1 回) |
 | B. improvement file あるが `## Phases` が空 or 全 Issue 未起票 | **roadmap モード** |
-| C. **直近 5 サイクル分の metric Log で改善 0** | **顧問 escalation モード** |
-| D. open Issue がまだある | **通常巡回モード** |
+| C. metric Log が **5 サイクル以上**記録されていて、**その直近 5 点が期待方向に動いていない (改善 0)** | **顧問 escalation モード** |
+| D. (C に該当しない =stall していない) **open Issue がまだある** | **通常巡回モード** |
 | E. target 達成済 | **完了報告モード** |
 
 A だけは repo 全体で 1 回 (init は新規 improvement 追加のため)。B〜E は improvement 毎に独立判定し、
