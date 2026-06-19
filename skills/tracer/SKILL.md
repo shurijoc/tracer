@@ -1,6 +1,12 @@
 ---
 name: tracer
 description: >
+  Quantitative-goal-driven autonomous improvement loop, run as a PM. One command (`/tracer`) reads
+  durable state per cycle and runs one of init / roadmap / advisor-escalation / routine-patrol / completion.
+  Regenerates a per-improvement HTML dashboard each cycle so a human can intervene. Two-layer reward
+  (per-Issue eval + goal metric), reward-hacking guards, staged autonomy. Works in any repo; state
+  lives in the target repo's .claude/goals/.
+
   定量ゴール駆動の自律改善ループを PM として運用するスキル。打つコマンドは `/tracer` の 1 本だけ。
   skill が state を読み、init / roadmap 作成 / 巡回 / 顧問 escalation / 完了報告 のいずれかを
   自動で実行する。どの repo でも使える (state は各 repo の .claude/goals/ に置く)。毎サイクル末に
