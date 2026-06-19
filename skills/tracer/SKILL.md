@@ -237,18 +237,17 @@ action 実行後、**この巡回で触れた improvement それぞれ**につ�
 
 各 dashboard に必ず含める要素 (1 improvement 1 ページ。**人間が最初に scan する 進捗 / metric を上位、C4 を下位** に置く順)。<!-- DET-GATE: dashboard-derives-from-gh -->進捗 (`{{DONE}}/{{TOTAL}}/{{PROGRESS_PCT}}`) と凍結中 Issue 一覧の値は **`gh issue list` から計算**して埋める (goal file の md を見ない):
 
-- **今サイクルの現在地**: この improvement に対して走らせた action (A〜E) と判定理由
+- **今サイクルの現在地**: この improvement に対して走らせた action (A〜E) と判定理由。`{{ACTION_LETTER}}` (A/B/C/D/E) と `{{ACTION_LETTER_CLASS}}` (色分け用 CSS class: A/B は空・C=`c`・D=`d`・E=`e`) を埋める
 - **現フェーズと進捗**: Issue 消化率 (**action banner の直下に置く**。最優先で見せる)
 - **autonomy level (L0/L1/L2)** と直近の判断突合結果 (連続一致 streak)
-- **metric 推移**: baseline / 現在 / target + 直近 N 点の sparkline
+- **metric 推移**: baseline / 現在 / target + 直近 N 点の sparkline。**最新値**を強調する: `{{LATEST_X}}` / `{{LATEST_Y}}` に最新点の座標 (viewBox 400x80)、`{{LATEST_LABEL_Y}}` には label の y (通常 `{{LATEST_Y}}` − 8)。**direction badge** `{{METRIC_DIRECTION_CLASS}}` (`ok`/`warn`/`bad`) と `{{METRIC_DIRECTION_LABEL}}` (例: `改善中 ↓` / `停滞 →` / `悪化 ↑`) を改善方向と直近 3〜5 点の傾きで判定して埋める
 - **現在の作業 (`{{CURRENT_FOCUS}}`)**: active な Issue / PR / 直近 metric Δ を 1〜2 行で要約。
   例: `#14 fix 中 (試行 3/5) · #15 PR レビュー待ち · metric +0.4`。
   persona は worker prompts / tamper check で使うので **goal file には残す** が、dashboard には出さない
-- **凍結中 Issue 一覧** (`gh issue list --label escalated --label goal:<improvement>` から計算)
-- **介入候補セクション**: ユーザーに判断を仰ぎたい項目 (L0 escalation 案、顧問起票案、merge 待ち PR)
+- **凍結中 Issue 一覧**: `gh issue list --label escalated --label goal:<improvement>` から計算。0 件なら `{{FROZEN_ISSUES}}` に `<div class="frozen-empty">凍結中の Issue なし</div>` を入れる
+- **介入候補セクション**: ユーザーに判断を仰ぎたい項目 (L0 escalation 案、顧問起票案、merge 待ち PR)。各 `<li>` の先頭に種別 badge を付ける: `<li><span class="kind escalation">L0</span>...</li>` / `kind advisor` / `kind merge`
 - **C4 アーキテクチャ**: 下記の手順で `c4.json` をインライン埋め込み (template の C4 セクションが描画)
-- **スケジュール (now / next / upcoming)**: 1 セクションで時間軸を見通す:
-  - `now`: 今サイクルの action (action-banner と同値。`{{ACTION_LETTER}}`/`{{ACTION_NAME}}`/`{{ACTION_REASON}}`)
+- **スケジュール (next / upcoming)**: now は action-banner で既出なので schedule からは省く:
   - `next` (`{{NEXT_ACTION}}` / `{{NEXT_REASON}}`): 次サイクルでこの improvement に当たりそうな action と理由
   - `upcoming` (`{{UPCOMING_ITEMS}}`): 近い 2〜3 件のロードマップ項目を `<ul><li>` で。
     出典は goal file の `## Phases` (現フェーズ内で未起票の Issue、または次フェーズの先頭 1〜2 件)、
