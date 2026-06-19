@@ -111,12 +111,25 @@
   .intervention.empty { background: var(--ok-bg); border-color: var(--ok); }
   .intervention.empty::before { content: "✓ "; color: var(--ok); font-weight: 700; }
 
-  .next {
+  .schedule {
     background: var(--surface-2); border-radius: var(--radius);
-    padding: 12px 16px; font-size: 13px;
+    padding: 4px 0; font-size: 13px;
   }
-  .next .k { color: var(--text-mute); margin-right: 6px; }
-  .next .v { font-family: var(--mono); font-weight: 600; }
+  .schedule-row {
+    display: grid; grid-template-columns: 72px 1fr; gap: 12px;
+    padding: 8px 16px; border-top: 1px solid var(--border);
+  }
+  .schedule-row:first-child { border-top: none; }
+  .schedule-when {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    color: var(--text-mute); text-transform: uppercase; letter-spacing: .05em;
+    padding-top: 2px;
+  }
+  .schedule-what { color: var(--text); }
+  .schedule-what .v { font-family: var(--mono); font-weight: 600; }
+  .schedule-what .reason { color: var(--text-mute); font-size: 12px; margin-top: 2px; }
+  .schedule-what ul { margin: 0; padding-left: 18px; }
+  .schedule-what ul li { margin: 2px 0; }
 
   footer {
     margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border);
@@ -243,12 +256,30 @@
   </div>
 </section>
 
-<!-- 次回予想 -->
+<!-- スケジュール (時間軸: now ↔ next ↔ upcoming)。
+     NOW はページ冒頭の action-banner で既出。ここでは next (次サイクル予想) と
+     upcoming (近い 2〜3 件のロードマップ) を 1 枚にまとめて先まで見通せるようにする -->
 <section>
-  <h2>次回 <code>/tracer</code> の予想 action ({{IMPROVEMENT_NAME}})</h2>
-  <div class="next">
-    <span class="k">予想:</span><span class="v">{{NEXT_ACTION}}</span>
-    <span class="k" style="margin-left: 16px;">理由:</span>{{NEXT_REASON}}
+  <h2>スケジュール ({{IMPROVEMENT_NAME}})</h2>
+  <div class="schedule">
+    <div class="schedule-row">
+      <span class="schedule-when">now</span>
+      <div class="schedule-what">
+        <span class="v">{{ACTION_LETTER}} — {{ACTION_NAME}}</span>
+        <div class="reason">{{ACTION_REASON}}</div>
+      </div>
+    </div>
+    <div class="schedule-row">
+      <span class="schedule-when">next</span>
+      <div class="schedule-what">
+        <span class="v">{{NEXT_ACTION}}</span>
+        <div class="reason">{{NEXT_REASON}}</div>
+      </div>
+    </div>
+    <div class="schedule-row">
+      <span class="schedule-when">upcoming</span>
+      <div class="schedule-what">{{UPCOMING_ITEMS}}</div>
+    </div>
   </div>
 </section>
 
