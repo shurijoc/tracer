@@ -6,6 +6,9 @@ Each entry: what changed, why, and the eval result at the time (`python evals/ru
 
 ## Unreleased
 
+### Changed
+- **Plugin directory submission prep (#6).** Added `author.url` to `plugin.json`. SKILL.md `$TRACER_DIR` find recipe now documents its scope (only Claude Code's own plugin/skill install dirs — not arbitrary user files) so directory reviewers can quickly verify check 3 (no out-of-directory access). `claude plugin validate . --strict` ✔, det 8/8, behavioral 12/12.
+
 ## [0.2.1] - 2026-06-18
 
 ### Fixed

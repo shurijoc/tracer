@@ -69,6 +69,7 @@ git repo でない場所では動かさない (state の監査性が成立しな
 TRACER_DIR=$(dirname "$(find ~/.claude/plugins/cache ~/.claude/skills -path '*/skills/tracer/SKILL.md' 2>/dev/null | sort -V | tail -1)")
 ```
 
+検索範囲は **Claude Code が plugin / skill を install する 2 ディレクトリのみ**で、ユーザー側のファイルツリーは触らない (この skill 自身の install root を特定するための parent traversal)。
 以後 `$TRACER_DIR/scripts/...` / `$TRACER_DIR/templates/...` を使う (plugin install / dev symlink の双方で解決でき、`sort -V` で最新版を選ぶ)。空なら plugin 未 install なのでユーザーに報告。
 
 **旧形式互換**: `_pm/decisions.md` / `_pm/activity.md` / `_pm/dashboard.html` (improvement suffix なし) が
