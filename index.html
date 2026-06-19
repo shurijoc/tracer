@@ -509,29 +509,92 @@
 
   <div class="keypoint">The trigger is decision C in §2 (0 metric improvement across the last 5 cycles of Log), or hitting attempt 5/5 during routine patrol. <b>Only once</b> per stall situation. If no proposal emerges even then, raise it to the user via normal escalation. Whether to file is governed by autonomy — the advisor never files an Issue directly (L0: approval, L1+: the PM files).</div>
 
-  <h2>8. dashboard.html — your intervention window</h2>
+  <h2>8. dashboard — intervention and explanation surface</h2>
 
-  <p>At the end of every cycle, the PM regenerates <code>.claude/goals/_pm/dashboard.html</code>. You look at this to decide whether to step in. The brief report just puts that full path at the top; the details are consolidated on the dashboard side.</p>
+  <p>At the end of every cycle, the PM regenerates <code>.claude/goals/_pm/dashboard-&lt;improvement&gt;.html</code>. You look at this to decide whether to step in. The brief report just puts that full path at the top; the details are consolidated on the dashboard side.</p>
 
-  <div class="dash-mock">
-    <div class="banner"><b>This cycle: D — routine patrol</b> · nothing recently stalled, all active have open Issues</div>
-    <div class="row">
-      <div class="imp"><div class="name">bugfix <span style="color: var(--ok);">●</span></div><div class="nums">42 → 38 → target ≤20</div>P2 (3/5) · L0 (2/5 matches)</div>
-      <div class="imp"><div class="name">perf <span style="color: var(--warn);">●</span></div><div class="nums">350ms → 310ms → target ≤200ms</div>P1 (4/4) · L1 (5/5 → proposing promotion to L2)</div>
-    </div>
-    <div class="interv">◆ Intervention candidates: #21 perf PR (awaiting L0 merge decision) · perf autonomy promotion proposal</div>
-    <div style="margin-top: 8px; color: var(--pm);">Predicted next: D (open Issues remain)</div>
-  </div>
+  <h3>8.1 Two intended readers</h3>
 
-  <p>What it includes:</p>
+  <p>The dashboard is designed not as a state viewer but as <b>"a tool the engineer pulls up while explaining to their manager."</b></p>
+
+  <table>
+    <tr><th>Persona</th><th>Situation</th><th>How they use the dashboard</th></tr>
+    <tr><td><b>A: engineer (vibe coder)</b></td><td>One person running 5–10 parallel improvements through AI. Light on specs, doesn't read code closely, result-driven</td><td>Opens it every morning. Catches up on "what moved overnight" and "what needs my approval"</td></tr>
+    <tr><td><b>B: manager (PM/PO)</b></td><td>Can't read code or PRs, but understands structure at a PM/PO level. Not inside the chat session, doesn't run AI themselves</td><td><b>Does not open it directly.</b> Looks at it together with A during explanations, to decide direction and schedule</td></tr>
+  </table>
+
+  <h3>8.2 The six questions the dashboard answers</h3>
+
+  <p>If "what's happening, what improves, when it improves" are unclear, A can't track it themselves and B can't plan around it. The dashboard answers these six.</p>
+
   <ul>
-    <li><b>This cycle's position</b>: the action run (A–E) and the reason it was selected</li>
-    <li><b>A card per improvement</b>: metric trend sparkline, current phase progress, frozen Issues, autonomy level and the current state of decision matching</li>
-    <li><b>Intervention-candidates section</b>: items where the PM wants your judgment (L0 escalation proposals, advisor Issue proposals, PRs awaiting merge)</li>
-    <li><b>The predicted next action of <code>/tracer</code></b>: which of A–E the next cycle is likely to land on</li>
+    <li><b>① metric position and distance to target</b>: a single line like <code>350ms → 310 → ≤20</code>. This is the real progress signal</li>
+    <li><b>② WHAT</b>: what is moving in this improvement right now (one sentence, avoid engineer jargon)</li>
+    <li><b>③ WHEN</b>: when it lands (ETA, remaining cycles, stall warning)</li>
+    <li><b>④ awaiting intervention</b>: PR merge decisions, L0 escalation proposals, advisor Issue proposals — all in one place</li>
+    <li><b>⑤ delta since yesterday</b>: one-line summary (<code>1 PR merged · metric +5% · no ask</code>)</li>
+    <li><b>⑥ per-phase before/after diagrams</b>: per roadmap phase (= Issue group / epic), <b>both</b> a C4 subset and a workflow diagram. The AI generates a draft and A corrects it</li>
   </ul>
 
-  <div class="keypoint">Not "hand off the work and never look," but <b>"look at the dashboard and decide whether to intervene"</b> — that is the user-side operation of this skill. The brief report is the entry point; the dashboard is the real thing.</div>
+  <div class="keypoint">persona (whose pain, = WHY) is obvious to both A and B, so it's dropped from the hero. Issue count and PR count are noise to B, so they're demoted to secondary information. <b>The shared language is metric × before/after diagram.</b></div>
+
+  <h3>8.3 The dashboard is three pages</h3>
+
+  <table>
+    <tr><th>Page</th><th>Primary reader</th><th>Role</th></tr>
+    <tr><td><b>overview</b></td><td>A</td><td>5–10 parallel improvements consolidated on one page. Morning entry point, approval inbox, cross-cutting delta summary</td></tr>
+    <tr><td><b>per-improvement dashboard</b></td><td>A → B</td><td>Current state of one improvement. The body A uses to point at and explain to B. Questions ①–⑤ in the hero</td></tr>
+    <tr><td><b>per-phase before/after diagram</b></td><td>A → B</td><td>What changes in this phase, shown as structure (C4 subset) and behavior (workflow). The concrete form of question ⑥</td></tr>
+  </table>
+
+  <p>The <b>overview</b> idea:</p>
+
+  <div class="dash-mock">
+    <div class="banner"><b>tracer overview</b> · 6 parallel improvements · 2 awaiting · 1 stalled</div>
+    <div class="row">
+      <div class="imp"><div class="name">bugfix <span style="color: var(--ok);">●</span></div><div class="nums">42 → 38 → ≤20</div>1 PR merged · ≈3c left</div>
+      <div class="imp"><div class="name">perf <span style="color: var(--warn);">●</span></div><div class="nums">350ms → 310 → ≤200ms</div>stall 2c · intervene</div>
+    </div>
+    <div class="row">
+      <div class="imp"><div class="name">i18n <span style="color: var(--ok);">●</span></div><div class="nums">0 → 6 → ≤2 langs missing</div>+2 langs · ≈4c left</div>
+      <div class="imp"><div class="name">a11y <span style="color: var(--ok);">●</span></div><div class="nums">68 → 81 → ≥90</div>+3 · ≈2c left</div>
+    </div>
+    <div class="interv">◆ Awaiting: #21 perf PR (L0 merge call) · i18n L1 promotion proposal</div>
+    <div style="margin-top: 8px; color: var(--pm);">Click any improvement card to drill down into its per-improvement dashboard</div>
+  </div>
+
+  <p>The <b>per-improvement dashboard</b> idea (the scene where A is explaining to B):</p>
+
+  <div class="dash-mock">
+    <div class="banner"><b>perf — push web response time under 200ms</b> · L1 self-driving · stall warning (metric flat 2c)</div>
+    <div class="row">
+      <div class="imp"><div class="name">① metric</div><div class="nums">350ms → 310 → target ≤200ms</div>55% remaining</div>
+      <div class="imp"><div class="name">③ WHEN</div><div class="nums">ETA ≈4 cycles · deadline 06/30</div>+1c risk from stall</div>
+    </div>
+    <div class="row">
+      <div class="imp"><div class="name">② WHAT (current phase)</div><div class="nums">Introducing an SSR cache layer</div>Issues #21 #22 #23</div>
+      <div class="imp"><div class="name">⑤ delta since yesterday</div><div class="nums">1 PR merged · metric ±0</div>no L0 ask</div>
+    </div>
+    <div class="interv">◆ ④ Awaiting: #21 PR merge decision · advisor proposal (stall-driven)</div>
+    <div style="margin-top: 8px; color: var(--pm);">⑥ before/after: ↓ per-phase two-form diagrams</div>
+  </div>
+
+  <p>The <b>per-phase before/after diagram</b> always pairs a C4 subset with a workflow diagram (sequence / user journey). The former captures the structural delta, the latter the behavioral delta. Without both, the explanation to B limps: structure alone doesn't convey "what gets better in motion," and motion alone hides "where the change landed." Timing and authorship are covered next.</p>
+
+  <h3>8.4 Update timing (tentative — to be finalized in the N2 spec)</h3>
+
+  <p>The points below are tentative. They are locked once the per-phase before/after diagram spec (N2) is finalized.</p>
+
+  <ul>
+    <li><b>overview / per-improvement dashboard</b>: regenerated at the end of every cycle (unchanged)</li>
+    <li><b>per-phase before/after diagram</b> (tentative): the AI drafts it when the phase is opened, A reviews / corrects. Subsequently redrawn when the phase closes or when a meaningful diff lands</li>
+    <li><b>Relationship to the existing repo-wide C4 (<code>c4.json</code>)</b> (tentative): initial direction — the AI auto-extracts the phase diagram as a subset of <code>c4.json</code></li>
+    <li><b>How A applies corrections</b> (tentative): a dedicated frontmatter in the goal file, or a per-phase md file. To be finalized in the skill spec</li>
+  </ul>
+
+  <h3>8.5 "Look and decide whether to intervene" is the real operation</h3>
+
+  <div class="keypoint">Not "hand off the work and never look," but <b>"look at the dashboard and decide whether to intervene"</b> — that is the user-side operation of this skill. The brief report is the entry point; the dashboard is the real thing. And the real purpose of the dashboard is the scene where <b>A explains to B</b>: building a shared language between the two.</div>
 
   <h2>9. Self-improvement runs in three layers</h2>
   <p>This loop's self-improvement happens in three places at once. Workers learn from failure logs, the PM restructures the plan from the metric, and the harness itself is updated by the decision-match rate.</p>
