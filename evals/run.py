@@ -27,6 +27,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CASES_DIR = os.path.join(ROOT, "evals", "cases")
 C4 = os.path.join(ROOT, "skills", "tracer", "scripts", "c4-to-section.py")
 SKILL_MD = os.path.join(ROOT, "skills", "tracer", "SKILL.md")
+SKILL_DIR = os.path.join(ROOT, "skills", "tracer")
 GOAL_TEMPLATE = os.path.join(ROOT, "skills", "tracer", "templates", "goal-template.md")
 
 
@@ -153,6 +154,35 @@ def det_tests():
             "SKILL.md must mark the dashboard-derives-from-gh contract with <!-- DET-GATE: dashboard-derives-from-gh -->"
         )
 
+    # ---- plugin directory submission gates (issue #6) ----
+    def t_skill_referenced_files_exist():
+        # check 2: every $TRACER_DIR/{scripts,templates}/<name> referenced from
+        # SKILL.md actually exists in the bundled skill dir. Catches typos and
+        # forgotten renames that would only surface at install time.
+        with open(SKILL_MD) as f:
+            text = f.read()
+        refs = sorted(set(re.findall(
+            r"\$TRACER_DIR/(?:scripts|templates)/[A-Za-z0-9_.-]+(?:\.[A-Za-z0-9]+)",
+            text,
+        )))
+        missing = []
+        for ref in refs:
+            rel = ref.replace("$TRACER_DIR/", "")
+            if not os.path.exists(os.path.join(SKILL_DIR, rel)):
+                missing.append(ref)
+        assert not missing, "SKILL.md references nonexistent bundled files: %r" % missing
+
+    def t_skill_no_out_of_plugin_writes():
+        # check 3: skill must not instruct writing to absolute paths outside
+        # the user's repo. Allowed: relative paths (target repo), $TRACER_DIR
+        # (read-only resources), and ~/.claude/{goals,plugins,skills} (state /
+        # install roots). Reject everything else absolute.
+        with open(SKILL_MD) as f:
+            text = f.read()
+        # any unix-absolute path with a known system root
+        forbidden = re.findall(r"(?<![A-Za-z0-9_])(/etc/|/usr/|/var/|/private/|/System/)[A-Za-z0-9_./-]+", text)
+        assert not forbidden, "SKILL.md references forbidden absolute paths: %r" % forbidden
+
     return [
         ("fragment_shape", t_fragment_shape),
         ("esc_quotes", t_esc_quotes),
@@ -166,6 +196,8 @@ def det_tests():
         ("goal_template_no_frozen_section", t_goal_template_no_frozen_section),
         ("skill_marker_completion_from_gh", t_skill_marker_completion_from_gh),
         ("skill_marker_dashboard_from_gh", t_skill_marker_dashboard_from_gh),
+        ("skill_referenced_files_exist", t_skill_referenced_files_exist),
+        ("skill_no_out_of_plugin_writes", t_skill_no_out_of_plugin_writes),
     ]
 
 
