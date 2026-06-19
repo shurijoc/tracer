@@ -5,7 +5,7 @@
 
 [English](README.md) | **日本語**
 
-> 定量ゴール (North Star Metric) に向かって**自律改善ループ**を PM として回す [Claude Code](https://claude.com/claude-code) skill。打つコマンドは `/tracer` の 1 本だけ。
+> **計測可能なゴールに向けて repo 改善を自動で回す。** PM として動く [Claude Code](https://claude.com/claude-code) skill — 次の打ち手を選び、Issue を起票し、North Star Metric への進捗を追う。打つコマンドは `/tracer` の 1 本だけ。
 
 ## 📖 ドキュメントは README ではなく HTML
 
@@ -13,24 +13,20 @@ md は読むのが疲れる。設計の中身 — 5 状態マシン・2 層報�
 
 ### 👉 [設計解説を読む](https://shurijoc.github.io/tracer/index.ja.html) &nbsp;·&nbsp; [English](https://shurijoc.github.io/tracer/)
 
-(ローカルなら [`index.ja.html`](index.ja.html) / [`index.html`](index.html) を開く)
-
 ## インストール
 
-[Claude Code](https://claude.com/claude-code) の plugin。Claude Code 内で:
+Claude Code 内で:
 
 ```
 /plugin marketplace add shurijoc/tracer
 /plugin install tracer@tracer
 ```
 
-更新は `/plugin update tracer@tracer`。`gh auth login` が前提 (Issue 起票に使う)。Node.js は任意 (C4 図のみ)。
-
-開発時はローカル checkout を読み込む: `claude --plugin-dir /path/to/tracer`。
+更新は `/plugin update tracer@tracer`。`gh auth login` が前提。Node.js は任意 (C4 図のみ)。開発時はローカル checkout を読み込む: `claude --plugin-dir /path/to/tracer`。
 
 ## クイックスタート
 
-改善したい repo のルートで `/tracer` を実行する。初回は改善対象 (persona / metric / eval) を対話で設定し、2 回目以降は state を読んでループを自動で進める。あとは **再生成されるダッシュボードを見て、詰まったらテコ入れする**だけ — 残りは[設計解説](https://shurijoc.github.io/tracer/index.ja.html)に。
+改善したい repo のルートで `/tracer` を実行する。初回は改善対象 (persona / metric / eval) を対話で設定、2 回目以降は state を読んで自動で進む。あとは **再生成されるダッシュボードを見て、詰まったらテコ入れする** — 残りは[設計解説](https://shurijoc.github.io/tracer/index.ja.html)に。
 
 ## License
 

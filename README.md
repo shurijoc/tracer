@@ -5,7 +5,7 @@
 
 **English** | [日本語](README.ja.md)
 
-> A [Claude Code](https://claude.com/claude-code) skill that runs an **autonomous improvement loop** as a PM, driving toward a quantitative goal (a North Star Metric). You only ever type `/tracer`.
+> **Drive your repo toward a measurable goal on autopilot.** A [Claude Code](https://claude.com/claude-code) skill that acts as PM — picks the next move, files Issues, and tracks progress against a North Star Metric. You only type `/tracer`.
 
 ## 📖 The docs are an HTML page, not this README
 
@@ -13,24 +13,20 @@ Markdown is tiring to read. The design — the 5-state machine, the two-layer re
 
 ### 👉 [Read the design doc](https://shurijoc.github.io/tracer/) &nbsp;·&nbsp; [日本語版](https://shurijoc.github.io/tracer/index.ja.html)
 
-(or open [`index.html`](index.html) / [`index.ja.html`](index.ja.html) locally)
-
 ## Install
 
-It's a [Claude Code](https://claude.com/claude-code) plugin. In Claude Code:
+In Claude Code:
 
 ```
 /plugin marketplace add shurijoc/tracer
 /plugin install tracer@tracer
 ```
 
-Update later with `/plugin update tracer@tracer`. Requires `gh auth login` (to file Issues); Node.js is optional (only for C4 diagrams).
-
-For development, load a local checkout instead: `claude --plugin-dir /path/to/tracer`.
+Update with `/plugin update tracer@tracer`. Requires `gh auth login`; Node.js optional (C4 diagrams only). For local development: `claude --plugin-dir /path/to/tracer`.
 
 ## Quick start
 
-Run `/tracer` from the root of the repo you want to improve. The first run interactively sets up an improvement target (persona / metric / eval); every run after that reads the state and advances the loop on its own. Then **just watch the regenerated dashboard and step in when it stalls** — see the [design doc](https://shurijoc.github.io/tracer/) for the rest.
+Run `/tracer` at the root of the repo you want to improve. First run sets up the target (persona / metric / eval) interactively; later runs advance the loop on their own. **Watch the regenerated dashboard and step in when it stalls** — the rest is in the [design doc](https://shurijoc.github.io/tracer/).
 
 ## License
 
