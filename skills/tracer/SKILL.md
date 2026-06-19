@@ -248,11 +248,16 @@ action 実行後、**この巡回で触れた improvement それぞれ**につ�
 - **凍結中 Issue 一覧**
 - **介入候補セクション**: ユーザーに判断を仰ぎたい項目 (L0 escalation 案、顧問起票案、merge 待ち PR)
 - **C4 アーキテクチャ**: 下記の手順で `c4.json` をインライン埋め込み (template の C4 セクションが描画)
-- **次回 `/tracer` の予想 action**: 次サイクルでこの improvement に当たりそうな action と理由
+- **スケジュール (now / next / upcoming)**: 1 セクションで時間軸を見通す:
+  - `now`: 今サイクルの action (action-banner と同値。`{{ACTION_LETTER}}`/`{{ACTION_NAME}}`/`{{ACTION_REASON}}`)
+  - `next` (`{{NEXT_ACTION}}` / `{{NEXT_REASON}}`): 次サイクルでこの improvement に当たりそうな action と理由
+  - `upcoming` (`{{UPCOMING_ITEMS}}`): 近い 2〜3 件のロードマップ項目を `<ul><li>` で。
+    出典は goal file の `## Phases` (現フェーズ内で未起票の Issue、または次フェーズの先頭 1〜2 件)、
+    既起票 open Issue は `<a href>` でリンク化。**新しい planning 層を作らない**。出典が空なら「未計画」と書く
 
 **プレースホルダ補足** (上記以外で template が要求するもの):
 - `{{REPO_NAME}}`: ブラウザタブ識別用。`<repo>` の basename を入れる (path 全体は `{{REPO_PATH}}` 側)。
-- **URL は必ずクリック可能に**: dashboard に書く Issue URL / PR URL / repo link 等は `<a href="...">...</a>` で出力する (bare text にしない)。介入候補・凍結中 Issue・現在の作業すべてに適用。
+- **URL は必ずクリック可能に**: dashboard に書く Issue URL / PR URL / repo link 等は `<a href="...">...</a>` で出力する (bare text にしない)。介入候補・凍結中 Issue・現在の作業・upcoming すべてに適用。
 
 **C4 セクションの埋め込み (重要)**: C4 図は **Mermaid を mmdc で SVG 化してインライン**する方式
 (自前 JS レンダラは廃止。レイアウトは dagre が担うので node/edge が潰れない・JS ゼロ・`file://` で動く)。
