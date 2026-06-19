@@ -235,16 +235,23 @@ action 実行後、**この巡回で触れた improvement それぞれ**につ�
 
 旧形式の共通 `_pm/dashboard.html` が残っていれば、初回再生成時に削除する。
 
-各 dashboard に必ず含める要素 (1 improvement 1 ページ):
+各 dashboard に必ず含める要素 (1 improvement 1 ページ。**人間が最初に scan する 進捗 / metric を上位、C4 を下位** に置く順):
 
 - **今サイクルの現在地**: この improvement に対して走らせた action (A〜E) と判定理由
-- **metric 推移**: baseline / 現在 / target + 直近 N 点の sparkline
-- **現フェーズと進捗**: Issue 消化率
+- **現フェーズと進捗**: Issue 消化率 (**action banner の直下に置く**。最優先で見せる)
 - **autonomy level (L0/L1/L2)** と直近の判断突合結果 (連続一致 streak)
+- **metric 推移**: baseline / 現在 / target + 直近 N 点の sparkline
+- **現在の作業 (`{{CURRENT_FOCUS}}`)**: active な Issue / PR / 直近 metric Δ を 1〜2 行で要約。
+  例: `#14 fix 中 (試行 3/5) · #15 PR レビュー待ち · metric +0.4`。
+  persona は worker prompts / tamper check で使うので **goal file には残す** が、dashboard には出さない
 - **凍結中 Issue 一覧**
 - **介入候補セクション**: ユーザーに判断を仰ぎたい項目 (L0 escalation 案、顧問起票案、merge 待ち PR)
-- **次回 `/tracer` の予想 action**: 次サイクルでこの improvement に当たりそうな action と理由
 - **C4 アーキテクチャ**: 下記の手順で `c4.json` をインライン埋め込み (template の C4 セクションが描画)
+- **次回 `/tracer` の予想 action**: 次サイクルでこの improvement に当たりそうな action と理由
+
+**プレースホルダ補足** (上記以外で template が要求するもの):
+- `{{REPO_NAME}}`: ブラウザタブ識別用。`<repo>` の basename を入れる (path 全体は `{{REPO_PATH}}` 側)。
+- **URL は必ずクリック可能に**: dashboard に書く Issue URL / PR URL / repo link 等は `<a href="...">...</a>` で出力する (bare text にしない)。介入候補・凍結中 Issue・現在の作業すべてに適用。
 
 **C4 セクションの埋め込み (重要)**: C4 図は **Mermaid を mmdc で SVG 化してインライン**する方式
 (自前 JS レンダラは廃止。レイアウトは dagre が担うので node/edge が潰れない・JS ゼロ・`file://` で動く)。
