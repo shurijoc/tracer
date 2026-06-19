@@ -509,29 +509,92 @@
 
   <div class="keypoint">発動条件は §2 の判定 C (直近 5 サイクル分の Log で metric 改善 0)、または通常巡回中に試行 5/5 到達。同一停滞局面につき<b>1 回だけ</b>。それでも案が出ない場合は通常 escalation でユーザーに上げる。起票の可否は autonomy に従い、顧問は直接 Issue を立てない (L0 は承認、L1+ は PM が起票)。</div>
 
-  <h2>8. dashboard.html — あなたの介入窓口</h2>
+  <h2>8. dashboard — 介入と説明の窓口</h2>
 
-  <p>毎サイクル末、PM は <code>.claude/goals/_pm/dashboard.html</code> を再生成する。あなたはこれを見て介入・テコ入れを判断する。短報はそのフルパスを冒頭に出すだけで、詳細はダッシュボード側に集約する。</p>
+  <p>毎サイクル末、PM は <code>.claude/goals/_pm/dashboard-&lt;improvement&gt;.html</code> を再生成する。あなたはこれを見て介入・テコ入れを判断する。短報はそのフルパスを冒頭に出すだけで、詳細はダッシュボード側に集約する。</p>
 
-  <div class="dash-mock">
-    <div class="banner"><b>今サイクル: D — 通常巡回</b> · 直近 stalled なし、active 全て open Issue あり</div>
-    <div class="row">
-      <div class="imp"><div class="name">bugfix <span style="color: var(--ok);">●</span></div><div class="nums">42 → 38 → target ≤20</div>P2 (3/5) · L0 (2/5 一致)</div>
-      <div class="imp"><div class="name">perf <span style="color: var(--warn);">●</span></div><div class="nums">350ms → 310ms → target ≤200ms</div>P1 (4/4) · L1 (5/5 → L2 昇格提案中)</div>
-    </div>
-    <div class="interv">◆ 介入候補: #21 perf PR (L0 merge 判断待ち) · perf autonomy 昇格提案</div>
-    <div style="margin-top: 8px; color: var(--pm);">次回予想: D (open Issue 残あり)</div>
-  </div>
+  <h3>8.1 想定読者は 2 ペルソナ</h3>
 
-  <p>含む情報:</p>
+  <p>dashboard は単なる状態ビューではなく <b>「実装者がマネージャーに説明する場面で一緒に見るツール」</b> として設計する。</p>
+
+  <table>
+    <tr><th>ペルソナ</th><th>状況</th><th>dashboard との関わり</th></tr>
+    <tr><td><b>A: 実装者 (vibe coder)</b></td><td>1 人で並列 5–10 improvement を AI に走らせている。仕様は浅め、コードは精読しない、結果ドリブン</td><td>毎朝開く起点。「夜中に何が進んだか」と「自分が承認すべきこと」を把握する</td></tr>
+    <tr><td><b>B: マネージャー (PM/PO)</b></td><td>コードや PR は読めないが、PM/PO レベルの構造的理解は可能。chat session に入らない・AI を自分では回さない</td><td><b>直接は見ない</b>。A が説明する場面で一緒に見て、方向性とスケジュールを判断する</td></tr>
+  </table>
+
+  <h3>8.2 dashboard が答える 6 つの問い</h3>
+
+  <p>「何してるか・何が改善されるか・いつ改善されるか」が見えないと、A は自分でも把握できず、B のスケジュール調整も詰まる。dashboard は次の問いに 6 つ答える。</p>
+
   <ul>
-    <li><b>今サイクルの現在地</b>: 走らせた action (A〜E) と判定理由</li>
-    <li><b>improvement 毎のカード</b>: metric 推移 sparkline・現フェーズ進捗・凍結 Issue・autonomy level と判断突合の現状</li>
-    <li><b>介入候補セクション</b>: ユーザーに判断を仰ぎたい項目 (L0 escalation 案・顧問起票案・merge 待ち PR)</li>
-    <li><b>次回 <code>/tracer</code> の予想 action</b>: 次サイクルが A〜E のどれに当たりそうか</li>
+    <li><b>① metric の現在地と target 距離</b>: <code>350ms → 310 → ≤200</code> のような 1 行で。これが進捗の本体</li>
+    <li><b>② WHAT</b>: 今この improvement で何が進んでいるか (1 文、engineer 用語は避ける)</li>
+    <li><b>③ WHEN</b>: いつ着地するか (ETA・残りサイクル見込み・stall 警告)</li>
+    <li><b>④ 介入待ち</b>: PR merge 判断・L0 escalation 案・顧問起票案を 1 か所に</li>
+    <li><b>⑤ 昨日からの Δ</b>: 1 行サマリ (<code>1 PR merged · metric +5% · no ask</code>)</li>
+    <li><b>⑥ phase 毎の before/after 図</b>: roadmap の phase (= Issue 群 / epic) 単位で、C4 サブセットと業務フローの<b>両形式併記</b>。AI が雛形を生成し、A が補正する</li>
   </ul>
 
-  <div class="keypoint">作業を任せて見ない、ではなく <b>「ダッシュボードを見て介入判断する」</b> がこの skill のユーザー側の運用。短報はその入口、dashboard が本体。</div>
+  <div class="keypoint">persona (誰の困りごとか = WHY) は A も B も自明なので hero から外す。Issue 数・PR 数は B にとってノイズなので二次情報に降格。<b>共通言語は metric × before/after 図</b> に統一する。</div>
+
+  <h3>8.3 dashboard は 3 枚で構成される</h3>
+
+  <table>
+    <tr><th>ページ</th><th>主読者</th><th>役割</th></tr>
+    <tr><td><b>overview</b></td><td>A</td><td>並列 5–10 improvement を 1 枚で集約。朝開く起点・承認集約・横断 Δ サマリ</td></tr>
+    <tr><td><b>単一 improvement dashboard</b></td><td>A → B</td><td>1 improvement の現在地。A が B に指差し説明する本体。問い ①〜⑤ を hero に</td></tr>
+    <tr><td><b>phase 毎 before/after 図</b></td><td>A → B</td><td>この phase で何が変わるかを、構造 (C4 サブセット) と動き (業務フロー) の 2 形式で。問い ⑥ の具体</td></tr>
+  </table>
+
+  <p><b>overview</b> のイメージ:</p>
+
+  <div class="dash-mock">
+    <div class="banner"><b>tracer overview</b> · 並列 6 improvement · 介入待ち 2 件 · stall 1 件</div>
+    <div class="row">
+      <div class="imp"><div class="name">bugfix <span style="color: var(--ok);">●</span></div><div class="nums">42 → 38 → ≤20</div>1 PR merged · 残 ≈3c</div>
+      <div class="imp"><div class="name">perf <span style="color: var(--warn);">●</span></div><div class="nums">350ms → 310 → ≤200ms</div>stall 2c · 介入候補</div>
+    </div>
+    <div class="row">
+      <div class="imp"><div class="name">i18n <span style="color: var(--ok);">●</span></div><div class="nums">0 → 6 → ≤2 言語抜け</div>+2 langs · 残 ≈4c</div>
+      <div class="imp"><div class="name">a11y <span style="color: var(--ok);">●</span></div><div class="nums">68 → 81 → ≥90</div>+3 · 残 ≈2c</div>
+    </div>
+    <div class="interv">◆ 介入候補: #21 perf PR (L0 merge 判断) · i18n L1 昇格提案</div>
+    <div style="margin-top: 8px; color: var(--pm);">各 improvement カードをクリックで単一 dashboard へ drill-down</div>
+  </div>
+
+  <p><b>単一 improvement dashboard</b> のイメージ (A が B に説明する場面):</p>
+
+  <div class="dash-mock">
+    <div class="banner"><b>perf — Web 応答時間を 200ms 以下に</b> · L1 自走中 · stall 警告 (2c metric 動かず)</div>
+    <div class="row">
+      <div class="imp"><div class="name">① metric</div><div class="nums">350ms → 310 → target ≤200ms</div>残り距離 55%</div>
+      <div class="imp"><div class="name">③ WHEN</div><div class="nums">ETA ≈4 サイクル · deadline 06/30</div>stall で +1c リスク</div>
+    </div>
+    <div class="row">
+      <div class="imp"><div class="name">② WHAT (今 phase)</div><div class="nums">SSR キャッシュ層の導入</div>Issue #21 #22 #23</div>
+      <div class="imp"><div class="name">⑤ 昨日からの Δ</div><div class="nums">1 PR merged · metric ±0</div>no L0 ask</div>
+    </div>
+    <div class="interv">◆ ④ 介入候補: #21 PR merge 判断 · 顧問起票案 (stall 由来)</div>
+    <div style="margin-top: 8px; color: var(--pm);">⑥ before/after: ↓ phase 毎の 2 形式図</div>
+  </div>
+
+  <p><b>phase 毎 before/after 図</b> は C4 サブセットと業務フロー (sequence / user journey) の 2 形式を必ず併記する。前者は構造の差分、後者は動きの差分を映す。両方ないと B への説明が片足になる (構造だけだと「動きとして何が良くなるか」が伝わらず、動きだけだと「どこに手を入れたか」が見えない)。生成タイミングと描き手は次節で示す。</p>
+
+  <h3>8.4 更新タイミング (仮置き、N2 仕様で確定)</h3>
+
+  <p>現時点は仮置き。phase 単位 before/after 図の仕様 (N2) が固まり次第ここを確定する。</p>
+
+  <ul>
+    <li><b>overview / 単一 dashboard</b>: 毎サイクル末に再生成 (現行どおり)</li>
+    <li><b>phase 毎 before/after 図</b> (仮置き): phase 起票時に AI が雛形生成 → A がレビュー / 補正。以降は phase 完了 or 重要な diff 発生時に再描画</li>
+    <li><b>既存 repo 全体 C4 (<code>c4.json</code>) との関係</b> (仮置き): phase 図は <code>c4.json</code> の subset として AI が自動抽出する初期方針</li>
+    <li><b>A の補正の口</b> (仮置き): goal file の専用 frontmatter か phase 毎 md ファイル。skill 詳細で確定</li>
+  </ul>
+
+  <h3>8.5 「見て介入判断する」が運用の本体</h3>
+
+  <div class="keypoint">作業を任せて見ない、ではなく <b>「ダッシュボードを見て介入判断する」</b> がこの skill のユーザー側の運用。短報はその入口、dashboard が本体。そして dashboard の本当の用途は<b>「A が B に説明する」</b>場面で、両者の共通言語を作ることにある。</div>
 
   <h2>9. 自己改善は 3 層で回る</h2>
   <p>このループの自己改善は 3 ヶ所で同時に起きる。worker は失敗ログから学び、PM は metric で計画を組み直し、harness 自体も判断一致率で更新される。</p>

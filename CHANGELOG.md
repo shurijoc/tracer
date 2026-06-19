@@ -7,6 +7,7 @@ Each entry: what changed, why, and the eval result at the time (`python evals/ru
 ## Unreleased
 
 ### Changed
+- **Design doc §8 rewrite — dashboard as an A→B explanation tool.** `index.html` / `index.ja.html` §8 reworked into 5 sub-sections (8.1 two personas, 8.2 six questions, 8.3 three pages — overview / per-improvement / per-phase before-after, 8.4 update timing as tentative pending the N2 spec, 8.5 keypoint). Drops persona from the hero (self-evident to both A and B), demotes Issue/PR counts to secondary information, makes `metric × before/after diagram` the shared language. Added an overview-page mock alongside the existing single-improvement mock; per-phase before/after mock deferred until N2 lands. Design-doc-only change; det 8/8, behavioral 12/12 (no skill behavior touched).
 - **Plugin directory submission prep (#6).** Added `author.url` to `plugin.json`. SKILL.md `$TRACER_DIR` find recipe now documents its scope (only Claude Code's own plugin/skill install dirs — not arbitrary user files) so directory reviewers can quickly verify check 3 (no out-of-directory access). `claude plugin validate . --strict` ✔, det 8/8, behavioral 12/12.
 
 ## [0.2.1] - 2026-06-18
