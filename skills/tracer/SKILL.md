@@ -205,16 +205,15 @@ active improvement 毎に以下を実行 (**複数 improvement は同一メッ�
    - **tamper check**: `git diff --name-only origin/main...<branch>` を `repo.protected_paths` と突合。
      1 ファイルでもヒットしたら eval 結果に関わらず escalation 扱い
    - **verifier 分離**: 実装 worker とは**別の** subagent に PR branch 上で eval を再実行させ独立確認
-4. **結果反映**:
+4. **結果反映** (<!-- DET-GATE: completion-from-gh -->完了/凍結の正本は GitHub Issue の状態。md にチェックボックスや凍結リストを書かない):
    - **eval 合格 (PR あり)**:
      - L0: PR は merge せずユーザーへの短報に列挙
-     - L1+: CI green を確認して merge → Issue クローズ → worktree 削除
-     - 該当 Issue に ✅、フェーズ内全消化ならフェーズ判定 (下記) へ
+     - L1+: CI green を確認して merge → **`gh issue close <N>`** → worktree 削除 (close したこと自体が完了印。md には書き戻さない)
    - **不合格**: Issue コメントに `試行 n/5: <失敗理由>` を記録
-   - **試行 5/5 到達 (escalate_after)**: Issue に `escalated` ラベル + 凍結。autonomy に従い処理 (下表)
-5. **フェーズ判定** (metric が主、Issue 消化は従):
-   - フェーズの Issue 全消化 + metric が期待方向に動いた → 次フェーズへ前進
-   - Issue 全消化したのに metric が動かない → 次回サイクルの C (顧問 escalation) でリダイレクトされる
+   - **試行 5/5 到達 (escalate_after)**: Issue に `escalated` ラベル付与で凍結 (`gh issue edit <N> --add-label escalated`)。autonomy に従い処理 (下表)
+5. **フェーズ判定** (metric が主、Issue 消化は従。消化数は `gh issue list --label goal:<improvement> --state open` で算出):
+   - フェーズの open Issue が 0 + metric が期待方向に動いた → 次フェーズへ前進
+   - フェーズの open Issue が 0 なのに metric が動かない → 次回サイクルの C (顧問 escalation) でリダイレクトされる
    - target 達成 → improvement を inactive 化 (次回サイクルで E に進む)
    - deadline 超過で未達 → escalation 扱いでユーザーに判断を仰ぐ
 
@@ -236,7 +235,7 @@ action 実行後、**この巡回で触れた improvement それぞれ**につ�
 
 旧形式の共通 `_pm/dashboard.html` が残っていれば、初回再生成時に削除する。
 
-各 dashboard に必ず含める要素 (1 improvement 1 ページ。**人間が最初に scan する 進捗 / metric を上位、C4 を下位** に置く順):
+各 dashboard に必ず含める要素 (1 improvement 1 ページ。**人間が最初に scan する 進捗 / metric を上位、C4 を下位** に置く順)。<!-- DET-GATE: dashboard-derives-from-gh -->進捗 (`{{DONE}}/{{TOTAL}}/{{PROGRESS_PCT}}`) と凍結中 Issue 一覧の値は **`gh issue list` から計算**して埋める (goal file の md を見ない):
 
 - **今サイクルの現在地**: この improvement に対して走らせた action (A〜E) と判定理由
 - **現フェーズと進捗**: Issue 消化率 (**action banner の直下に置く**。最優先で見せる)
@@ -245,7 +244,7 @@ action 実行後、**この巡回で触れた improvement それぞれ**につ�
 - **現在の作業 (`{{CURRENT_FOCUS}}`)**: active な Issue / PR / 直近 metric Δ を 1〜2 行で要約。
   例: `#14 fix 中 (試行 3/5) · #15 PR レビュー待ち · metric +0.4`。
   persona は worker prompts / tamper check で使うので **goal file には残す** が、dashboard には出さない
-- **凍結中 Issue 一覧**
+- **凍結中 Issue 一覧** (`gh issue list --label escalated --label goal:<improvement>` から計算)
 - **介入候補セクション**: ユーザーに判断を仰ぎたい項目 (L0 escalation 案、顧問起票案、merge 待ち PR)
 - **C4 アーキテクチャ**: 下記の手順で `c4.json` をインライン埋め込み (template の C4 セクションが描画)
 - **スケジュール (now / next / upcoming)**: 1 セクションで時間軸を見通す:
@@ -332,6 +331,7 @@ perf:   [D 通常巡回] metric 310ms/350→200 | #21 PR 待ち (L0: merge 判�
 | git repo 外 / gh 未認証 | 巡回せずユーザーに報告 |
 | dashboard 雛形が見つからない | 巡回は続行、短報の末尾に「dashboard 未生成」と明示してユーザーに通知 |
 | c4.json が無い / 壊れ / mmdc 失敗 | `c4-to-section.py` が 0 終了で「未生成/失敗」断片を返す。それを `{{C4_SECTION}}` に入れる。巡回は止めない。推測で修復しない |
+| goal file に旧形式の `- [x]` / `## Frozen` セクションが残っている | 無視して読み飛ばす (完了は `gh` から、凍結は `escalated` label から復元)。md を書き換えない |
 
 ## References
 
