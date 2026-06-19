@@ -19,13 +19,13 @@ repo:
 
 ## Phases
 
-<!-- init で全フェーズを書き切る。各 Issue は起票済み番号で記録 -->
-- [ ] P1: <フェーズ名> (#xx #yy)
-- [ ] P2: <フェーズ名> (#zz)
+<!-- init で全フェーズを書き切る。各 Issue は起票済み番号で記録。
+     完了/未完は GitHub Issue の open/closed が正本 (md にチェックボックスを持たない)。 -->
+- P1: <フェーズ名> (#xx #yy)
+- P2: <フェーズ名> (#zz)
 
-## Frozen
-
-<!-- escalation 凍結中の Issue。解除はユーザー決定の書き戻しで行う -->
+<!-- 凍結中 Issue は GitHub の `escalated` label が正本。md には持たない。
+     一覧: gh issue list --label escalated --label goal:<improvement> -->
 
 ## Log
 

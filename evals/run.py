@@ -21,11 +21,13 @@ usage:
 
 exit code is non-zero on any failure, so this gates a release (regression suite).
 """
-import sys, os, io, json, glob, importlib.util, contextlib
+import sys, os, io, re, json, glob, importlib.util, contextlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CASES_DIR = os.path.join(ROOT, "evals", "cases")
 C4 = os.path.join(ROOT, "skills", "tracer", "scripts", "c4-to-section.py")
+SKILL_MD = os.path.join(ROOT, "skills", "tracer", "SKILL.md")
+GOAL_TEMPLATE = os.path.join(ROOT, "skills", "tracer", "templates", "goal-template.md")
 
 
 # ---------- load the c4 module (filename has a hyphen) ----------
@@ -116,6 +118,41 @@ def det_tests():
         mmd = mod.build_mermaid(level, "perf")  # no improvements -> no hl class line
         assert " hl;" not in mmd, mmd
 
+    # ---- state SoT: completion / freeze derive from gh, not md (issue #10) ----
+    def _phases_section(text):
+        # extract "## Phases" through the next "## " heading (or EOF)
+        m = re.search(r"^## Phases\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+        return m.group(1) if m else ""
+
+    def t_goal_template_no_phase_checkbox():
+        with open(GOAL_TEMPLATE) as f:
+            phases = _phases_section(f.read())
+        assert phases, "goal-template.md must have a ## Phases section"
+        assert "- [ ]" not in phases and "- [x]" not in phases, (
+            "goal-template.md ## Phases must not use checkboxes — completion is gh-derived. Found:\n" + phases
+        )
+
+    def t_goal_template_no_frozen_section():
+        with open(GOAL_TEMPLATE) as f:
+            text = f.read()
+        assert not re.search(r"^## Frozen\b", text, re.M), (
+            "goal-template.md must not have a ## Frozen section — escalated label is the source of truth"
+        )
+
+    def t_skill_marker_completion_from_gh():
+        with open(SKILL_MD) as f:
+            text = f.read()
+        assert "DET-GATE: completion-from-gh" in text, (
+            "SKILL.md must mark the completion-from-gh contract with <!-- DET-GATE: completion-from-gh -->"
+        )
+
+    def t_skill_marker_dashboard_from_gh():
+        with open(SKILL_MD) as f:
+            text = f.read()
+        assert "DET-GATE: dashboard-derives-from-gh" in text, (
+            "SKILL.md must mark the dashboard-derives-from-gh contract with <!-- DET-GATE: dashboard-derives-from-gh -->"
+        )
+
     return [
         ("fragment_shape", t_fragment_shape),
         ("esc_quotes", t_esc_quotes),
@@ -125,6 +162,10 @@ def det_tests():
         ("empty_nodes", t_empty_nodes),
         ("build_mermaid_basics", t_build_mermaid_basics),
         ("build_mermaid_no_highlight", t_build_mermaid_no_highlight),
+        ("goal_template_no_phase_checkbox", t_goal_template_no_phase_checkbox),
+        ("goal_template_no_frozen_section", t_goal_template_no_frozen_section),
+        ("skill_marker_completion_from_gh", t_skill_marker_completion_from_gh),
+        ("skill_marker_dashboard_from_gh", t_skill_marker_dashboard_from_gh),
     ]
 
 
